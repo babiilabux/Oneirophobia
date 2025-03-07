@@ -6,8 +6,14 @@ import {
   Vector3, 
   MeshBuilder, 
   StandardMaterial, 
-  Color3 
+  Color3,
+  Texture,
+  PBRMaterial
 } from "@babylonjs/core";
+import "@babylonjs/loaders/glTF";
+
+
+
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { AdvancedDynamicTexture, StackPanel, TextBlock } from "@babylonjs/gui/2D";
 
@@ -34,14 +40,52 @@ camera.minZ = 0.1;  // Vue des objets proches
 
 // Lumière
 const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-light.intensity = 0.1;
+light.intensity = 0.005;
 
-// Sol
-const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
-const groundMaterial = new StandardMaterial("groundMat", scene);
-groundMaterial.diffuseColor = new Color3(0.5, 0.35, 0.2); // Couleur parquet
+
+// Création du sol
+const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 10, height: 10, subdivisions: 100 }, scene);
+
+// Création du matériau PBR
+const groundMaterial = new BABYLON.PBRMaterial("groundMaterial", scene);
+
+// Charger la texture diffuse (Albedo)
+groundMaterial.albedoTexture = new BABYLON.Texture("../Textures/floor_diffuse.jpg", scene);
+
+groundMaterial.albedoTexture.uScale = 3; // Plus grand = motifs plus petits
+groundMaterial.albedoTexture.vScale = 3; // Plus grand = motifs plus petits
+// groundMaterial.bumpTexture.uScale = 3;
+// groundMaterial.bumpTexture.vScale = 3; reactiver si on active normal map
+
+
+// Charger la Normal Map (bleue)
+groundMaterial.bumpTexture = null;
+groundMaterial.invertNormalMapX = true; 
+groundMaterial.invertNormalMapY = true;
+
+
+
+// Charger la Roughness Map (définit la rugosité)
+groundMaterial.metallicTexture = new BABYLON.Texture("../Textures/floor_roughness.jpg", scene);
+groundMaterial.useRoughnessFromMetallicTextureAlpha = false;
+groundMaterial.useRoughnessFromMetallicTextureGreen = true; // Souvent stockée dans le canal vert
+
+// Ajuster la rugosité globale (1 = mat, 0 = brillant)
+groundMaterial.roughness = 1;
+
+// Ajouter la Displacement Map (carte de déplacement)
+groundMaterial.displacementTexture = new BABYLON.Texture("../Textures/floor_displacement.jpg", scene);
+
+// Configurer la force du displacement (intensité du relief)
+groundMaterial.displacementScale = 0.2; // Ajuster cette valeur pour un relief plus ou moins marqué
+groundMaterial.displacementBias = 0;  // Ajuster le biais pour décaler le relief si nécessaire
+
+// Appliquer le matériau au sol
 ground.material = groundMaterial;
 ground.checkCollisions = true;
+
+
+
 
 // Plafond
 const ceiling = MeshBuilder.CreateGround("ceiling", { width: 10, height: 10 }, scene);
@@ -52,47 +96,198 @@ ceiling.position = new Vector3(0, 4, 0);
 ceiling.rotation = new Vector3(Math.PI, 0, 0);
 ceiling.checkCollisions = true;
 
-// Murs
-const wallMaterial = new StandardMaterial("wallMat", scene);
-wallMaterial.diffuseColor = new Color3(0.95, 0.95, 0.9); // Blanc cassé
-wallMaterial.backFaceCulling = false;
 
+
+// Matériau PBR pour les murs
+const wallMaterial = new BABYLON.PBRMaterial("wallMat", scene);
+wallMaterial.albedoColor = new BABYLON.Color3(0.95, 0.95, 0.9); // Couleur de base (blanc cassé)
+
+// Appliquer les textures
+wallMaterial.albedoTexture = new BABYLON.Texture("../Textures/wall_brick_diffuse.jpg", scene); // Texture diffuse
+wallMaterial.bumpTexture = new BABYLON.Texture("../Textures/wall_brick_normal.jpg", scene);  // Texture normale
+wallMaterial.metallicTexture = new BABYLON.Texture("../Textures/wall_brick_roughness.jpg", scene); // Texture de rugosité (roughness)
+wallMaterial.displacementTexture = new BABYLON.Texture("../Textures/wall_brick_displacement.jpg", scene);
+
+wallMaterial.bumpTexture.level = 1.0; // Niveau d'intensité de la texture normale
+wallMaterial.roughness = 0.8; // Ajustez en fonction de l'effet désiré
+wallMaterial.metallic = 0.1; // Ajustez en fonction du niveau métallique du matériau
+wallMaterial.displacementScale = 0.2; // Ajuster cette valeur pour un relief plus ou moins marqué
+wallMaterial.displacementBias = 0;  // Ajuster le biais pour décaler le relief si nécessaire
+
+// Murs
 // Mur 1 (devant)
-const wall1 = MeshBuilder.CreatePlane("wall1", { width: 10, height: 4 }, scene);
+const wall1 = BABYLON.MeshBuilder.CreatePlane("wall1", { width: 10, height: 4 }, scene);
 wall1.material = wallMaterial;
-wall1.position = new Vector3(0, 2, -5);
-wall1.rotation = new Vector3(0, Math.PI, 0); // Rotation pour l'orientation correcte
+wall1.position = new BABYLON.Vector3(0, 2, -5);
+wall1.rotation = new BABYLON.Vector3(0, Math.PI, 0); // Rotation pour l'orientation correcte
 wall1.checkCollisions = true;
 
 // Mur 2 (gauche)
-const wall2 = MeshBuilder.CreatePlane("wall2", { width: 10, height: 4 }, scene);
+const wall2 = BABYLON.MeshBuilder.CreatePlane("wall2", { width: 10, height: 4 }, scene);
 wall2.material = wallMaterial;
-wall2.position = new Vector3(-5, 2, 0);
-wall2.rotation = new Vector3(0, -Math.PI / 2, 0); // Orientation vers la gauche
+wall2.position = new BABYLON.Vector3(-5, 2, 0);
+wall2.rotation = new BABYLON.Vector3(0, -Math.PI / 2, 0); // Orientation vers la gauche
 wall2.checkCollisions = true;
 
 // Mur 3 (droite)
-const wall3 = MeshBuilder.CreatePlane("wall3", { width: 10, height: 4 }, scene);
+const wall3 = BABYLON.MeshBuilder.CreatePlane("wall3", { width: 10, height: 4 }, scene);
 wall3.material = wallMaterial;
-wall3.position = new Vector3(5, 2, 0);
-wall3.rotation = new Vector3(0, Math.PI / 2, 0); // Orientation vers la droite
+wall3.position = new BABYLON.Vector3(5, 2, 0);
+wall3.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0); // Orientation vers la droite
 wall3.checkCollisions = true;
 
 // Mur 4 (derrière)
-const wall4 = MeshBuilder.CreatePlane("wall4", { width: 10, height: 4 }, scene);
-wall4.material = wallMaterial;
-wall4.position = new Vector3(0, 2, 5);
-wall4.checkCollisions = true;
+// Mur arrière (divisé en 2 pour laisser la place à la porte)
+const wallThickness = 0.2; // Ajuste l'épaisseur selon ton besoin
 
-// Déclaration du matériau de la porte
-const doorMaterial = new StandardMaterial("doorMat", scene);
-doorMaterial.diffuseColor = new Color3(0.7, 0.5, 0.2);  // Couleur rouge
+const wall4Left = BABYLON.MeshBuilder.CreateBox("wall4Left", { width: 4.3, height: 4, depth: wallThickness }, scene);
+wall4Left.material = wallMaterial;
+wall4Left.position = new BABYLON.Vector3(-2.85, 2, 5); // Même position
+wall4Left.checkCollisions = true;
 
-// Création de la porte avec le matériau
-const door = MeshBuilder.CreateBox("door", { width: 2, height: 3, depth: 0.1 }, scene);
-door.material = doorMaterial;
-door.position = new Vector3(0, 1.5, -4.9);  // Légèrement en avant
-door.checkCollisions = false;
+const wall4Right = BABYLON.MeshBuilder.CreateBox("wall4Right", { width: 4.3, height: 4, depth: wallThickness }, scene);
+wall4Right.material = wallMaterial;
+wall4Right.position = new BABYLON.Vector3(2.85, 2, 5); // Même position
+wall4Right.checkCollisions = true;
+
+
+// Ajout de la deuxième salle (même dimensions que la première)
+const ground2 = BABYLON.MeshBuilder.CreateGround("ground2", { width: 10, height: 10 }, scene);
+ground2.material = groundMaterial;
+ground2.position.z = 10; // Derrière la première salle
+ground2.checkCollisions = true;
+
+// Plafond de la deuxième salle
+const ceiling2 = BABYLON.MeshBuilder.CreateGround("ceiling2", { width: 10, height: 10 }, scene);
+ceiling2.material = ceilingMaterial;
+ceiling2.position = new BABYLON.Vector3(0, 4, 10);
+ceiling2.rotation = new BABYLON.Vector3(Math.PI, 0, 0);
+ceiling2.checkCollisions = true;
+
+// Murs de la deuxième salle
+const wall5 = BABYLON.MeshBuilder.CreatePlane("wall5", { width: 10, height: 4 }, scene);
+wall5.material = wallMaterial;
+wall5.position = new BABYLON.Vector3(0, 2, 15);
+wall5.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+wall5.checkCollisions = true;
+
+const wall6 = BABYLON.MeshBuilder.CreatePlane("wall6", { width: 10, height: 4 }, scene);
+wall6.material = wallMaterial;
+wall6.position = new BABYLON.Vector3(-5, 2, 10);
+wall6.rotation = new BABYLON.Vector3(0, -Math.PI / 2, 0);
+wall6.checkCollisions = true;
+
+const wall7 = BABYLON.MeshBuilder.CreatePlane("wall7", { width: 10, height: 4 }, scene);
+wall7.material = wallMaterial;
+wall7.position = new BABYLON.Vector3(5, 2, 10);
+wall7.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0);
+wall7.checkCollisions = true;
+
+
+
+// Création du matériau PBR pour la porte
+const doorPBRMaterial = new BABYLON.PBRMaterial("doorPBRMat", scene);
+
+// Charger la texture diffuse (la texture de base) pour la porte
+doorPBRMaterial.albedoTexture = new BABYLON.Texture("../Textures/wood_door.jpg", scene);
+
+// Ajuster l'échelle de la texture pour éviter les répétitions
+
+// Charger la texture de rugosité (ici, une texture de rugosité simple pourrait être utilisée)
+doorPBRMaterial.metallicTexture = new BABYLON.Texture("../Textures/wood_roughness.jpg", scene); // Remplace cette texture par ta texture de rugosité
+doorPBRMaterial.roughness = 0.8;  // Tu peux ajuster cela selon la rugosité de ton bois
+
+// Ajouter une texture de normal map pour donner du relief à la texture
+doorPBRMaterial.bumpTexture = new BABYLON.Texture("../Textures/wood_normal.jpg", scene);  // Remplace par ta texture de normal map
+
+// Ajouter une légère réflexion (en ajustant le paramètre de métallisation et rugosité)
+doorPBRMaterial.metallic = 0.0;  // Le bois n'est pas métallique
+doorPBRMaterial.roughness = 0.8; // Ajuste la rugosité
+
+// Désactiver le backFaceCulling pour voir la texture des deux côtés de la porte
+doorPBRMaterial.backFaceCulling = false;
+
+// Créer la géométrie de la porte (une simple boîte pour l'exemple)
+const door = BABYLON.MeshBuilder.CreateBox("door", { height: 3, width: 1.4, depth: 0.1 }, scene); // Créer la porte avec une taille de 3x1x0.1
+door.setPivotPoint(new BABYLON.Vector3(0.7, 0, 0)); // Déplace le pivot sur le bord gauche
+
+// Appliquer le matériau PBR à la porte
+door.material = doorPBRMaterial;
+
+// Positionner la porte dans la scène
+door.position = new BABYLON.Vector3(0, 1.5, 5); // Positionner la porte à (0, 1.5, 5) (ajuste en fonction de ta scène)
+
+// Activer les collisions pour la porte
+door.checkCollisions = true;  // Activer les collisions pour ce mesh
+// Détecter la proximité du joueur avec la porte
+let doorOpen = false;
+
+scene.onKeyboardObservable.add((kbInfo) => {
+    if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN && kbInfo.event.key === "a") {
+        const distance = BABYLON.Vector3.Distance(door.position, camera.position);
+        if (distance < 2.5 && !doorOpen) {
+            openDoor();
+        }
+    }
+});
+
+function openDoor() {
+    doorOpen = true;
+    const animation = new BABYLON.Animation(
+        "doorOpenAnimation",
+        "rotation.y",
+        30,
+        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+    );
+
+    const keys = [
+        { frame: 0, value: 0 },
+        { frame: 30, value: Math.PI / 2 }
+    ];
+
+    animation.setKeys(keys);
+    door.animations = [animation];
+    scene.beginAnimation(door, 0, 30, false);
+}
+
+function closeDoor() {
+  doorOpen = false;
+  const animation = new BABYLON.Animation(
+      "doorCloseAnimation",
+      "rotation.y",
+      30,
+      BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+      BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+  );
+
+  const keys = [
+      { frame: 0, value: Math.PI / 2 },
+      { frame: 30, value: 0 }
+  ];
+
+  animation.setKeys(keys);
+  door.animations = [animation];
+  scene.beginAnimation(door, 0, 30, false);
+}
+
+// Détection du joueur dans la deuxième salle
+scene.registerBeforeRender(() => {
+  if (doorOpen) {
+      const playerInsideSecondRoom = camera.position.z > 6; // Si le joueur est dans la deuxième salle
+
+      if (playerInsideSecondRoom) {
+          setTimeout(() => {
+              if (doorOpen) {
+                  closeDoor();
+              }
+          }, 1000); // Attendre 1 seconde avant de fermer la porte
+      }
+  }
+});
+
+
+
 
 // Mains
 const handMaterial = new StandardMaterial("handMat", scene);
@@ -103,33 +298,19 @@ leftHand.material = handMaterial;
 
 const rightHand = leftHand.clone("rightHand");
 
-// Création de la clé dans la salle
-const keyMaterial = new StandardMaterial("keyMat", scene);
-keyMaterial.diffuseColor = new Color3(1, 1, 0);  // Couleur rouge
+// Création d'un élément
+// const keyMaterial = new StandardMaterial("keyMat", scene);
+// keyMaterial.diffuseColor = new Color3(1, 1, 0);  
 
-const swordMaterial = new StandardMaterial("swordMat", scene);
-swordMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5); // Couleur métallique pour l'épée
 
-const potionMaterial = new StandardMaterial("potionMat", scene);
-potionMaterial.diffuseColor = new Color3(0, 0, 1); // Couleur bleue pour la potion
+// modélisation et position de l'élément
+// const key = MeshBuilder.CreateCylinder("key", { height: 0.5, diameter: 0.2 }, scene);
+// key.material = keyMaterial;
+// key.position = new Vector3(0, 1, 0);  // Position de la clé dans la salle
+// key.checkCollisions = true;
 
-//clé
-const key = MeshBuilder.CreateCylinder("key", { height: 0.5, diameter: 0.2 }, scene);
-key.material = keyMaterial;
-key.position = new Vector3(0, 1, 0);  // Position de la clé dans la salle
-key.checkCollisions = true;
 
-// Création de l'épée
-const sword = MeshBuilder.CreateBox("sword", { width: 0.1, height: 0.5, depth: 0.1 }, scene);
-sword.material = swordMaterial;
-sword.position = new Vector3(-1, 1, 0); // Position de l'épée
-sword.checkCollisions = true;
 
-// Création de la potion
-const potion = MeshBuilder.CreateSphere("potion", { diameter: 0.3 }, scene);
-potion.material = potionMaterial;
-potion.position = new Vector3(1, 1, 0); // Position de la potion
-potion.checkCollisions = true;
 
 const flashlightMaterial = new StandardMaterial("flashlightMat", scene);
 flashlightMaterial.diffuseColor = new Color3(1, 1, 0); // Jaune vif
@@ -138,41 +319,8 @@ const flashlight = MeshBuilder.CreateCylinder("flashlight", { height: 0.3, diame
 flashlight.material = flashlightMaterial;
 flashlight.position = new Vector3(1, 1, 1); // Position de la lampe torche
 
-// Création du lit
-const bedMaterial = new StandardMaterial("bedMat", scene);
-bedMaterial.diffuseColor = new Color3(0.8, 0.5, 0.3);  // Couleur bois clair
-
-// Base du lit (un grand rectangle)
-const bedBase = MeshBuilder.CreateBox("bedBase", { width: 2, height: 0.1, depth: 1 }, scene);
-bedBase.material = bedMaterial;
-bedBase.position = new Vector3(-4, 0.05, -4);  // Position du lit dans le coin de la pièce
-bedBase.checkCollisions = true;
-
-// Matelas du lit
-const mattressMaterial = new StandardMaterial("mattressMat", scene);
-mattressMaterial.diffuseColor = new Color3(0.9, 0.9, 0.9);  // Couleur blanc pour le matelas
-
-const mattress = MeshBuilder.CreateBox("mattress", { width: 2, height: 0.1, depth: 1 }, scene);
-mattress.material = mattressMaterial;
-mattress.position = new Vector3(-4, 0.2, -4);  // Position du matelas sur la base du lit
-mattress.checkCollisions = true;
-
-// Oreillers
-const pillowMaterial = new StandardMaterial("pillowMat", scene);
-pillowMaterial.diffuseColor = new Color3(1, 1, 1);  // Couleur blanc pour les oreillers
-
-const pillow1 = MeshBuilder.CreateBox("pillow1", { width: 0.5, height: 0.2, depth: 0.3 }, scene);
-pillow1.material = pillowMaterial;
-pillow1.position = new Vector3(-4.5, 0.35, -4.5);  // Position du premier oreiller
-
-const pillow2 = pillow1.clone("pillow2");
-pillow2.position = new Vector3(-3.5, 0.35, -4.5);  // Position du second oreiller
-
 // Variables pour stocker les objets ramassés
 let inventory = {
-  key: false,
-  sword: false,
-  potion: false,
   flashlight: false,
 };
 
@@ -213,17 +361,6 @@ scene.actionManager.registerAction(new ExecuteCodeAction(
   }
 ));
 
-// Détection du clic sur la clé
-key.actionManager = new ActionManager(scene);
-
-// Quand l'utilisateur clique sur la clé, ajoute-la à l'inventaire
-key.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
-  if (!hasKey) {
-      hasKey = true;
-      inventoryText.text += "\n- Clé";  // Ajoute la clé à l'inventaire
-      key.setEnabled(false);  // Désactive l'objet clé après l'avoir ramassé
-  }
-}));
 
 scene.onBeforeRenderObservable.add(() => {
   const moveVector = new Vector3(0, 0, 0);
@@ -260,39 +397,20 @@ inventoryText.text = "Sac à dos :\n(vide)";
 inventoryText.color = "white";
 inventoryPanel.addControl(inventoryText);
 
-let keyInHand = null; // Variable pour stocker la clé dans la main
-
 function updateInventoryText() {
   let inventoryItems = "Sac à dos :\n";
-  if (inventory.key) inventoryItems += "[1] Clé\n";
-  if (inventory.sword) inventoryItems += "[2] Épée\n";
-  if (inventory.potion) inventoryItems += "[3] Potion de soin\n";
-  if (inventory.flashlight) inventoryItems += "[4] Lampe torche\n";
+  if (inventory.flashlight) inventoryItems += "Lampe torche\n";
   inventoryText.text = inventoryItems;
 }
 function collectItem(item) {
   switch (item) {
-      case "key":
-          if (!inventory.key) {
-              inventory.key = true;
-              key.dispose(); // Supprime la clé de la scène
-              updateInventoryText();
-          }
-          break;
-      case "sword":
-          if (!inventory.sword) {
-              inventory.sword = true;
-              sword.dispose(); // Supprime l'épée de la scène
-              updateInventoryText();
-          }
-          break;
-      case "potion":
-          if (!inventory.potion) {
-              inventory.potion = true;
-              potion.dispose(); // Supprime la potion de la scène
-              updateInventoryText();
-          }
-          break;
+      // case "element modélisé a récupérer":
+      //     if (!inventory.key) {
+      //         inventory.key = true;
+      //         key.dispose(); // Supprime la clé de la scène
+      //         updateInventoryText();
+      //     }
+      //     break;
       case "flashlight": // Gestion de la lampe torche
           if (!inventory.flashlight) {
               inventory.flashlight = true;
@@ -322,7 +440,7 @@ function equipItem(item) {
               "spotlight",
               camera.position, // Position initiale : à la position de la caméra
               camera.getDirection(Vector3.Forward()), // Direction alignée sur la caméra
-              Math.PI / 3, // Augmenter l'angle pour une diffusion plus large
+              Math.PI / 2, // Augmenter l'angle pour une diffusion plus large
               2, // Exposant pour une atténuation plus douce
               scene
           );
@@ -376,9 +494,7 @@ function unequipItem() {
 // Interaction avec les objets dans la salle
 scene.onPointerDown = function (evt, pickResult) {
   if (pickResult.hit) {
-      if (pickResult.pickedMesh === key) collectItem("key");
-      if (pickResult.pickedMesh === sword) collectItem("sword");
-      if (pickResult.pickedMesh === potion) collectItem("potion");
+      // if (pickResult.pickedMesh === key) collectItem("element a ajouter");
       if (pickResult.pickedMesh === flashlight) collectItem("flashlight");
   }
 };
@@ -389,9 +505,7 @@ scene.onPointerDown = function (evt, pickResult) {
 window.addEventListener("keydown", (event) => {
   if (event.key === "e" || event.key === "E") inventoryPanel.isVisible = !inventoryPanel.isVisible;
 
-  if (event.key === "1" || event.key === "&") equipItem("key");
-  if (event.key === "2" || event.key === "é") equipItem("sword");
-  if (event.key === "3" || event.key === "\"") equipItem("potion");
+  // if (event.key === "1" || event.key === "&") equipItem("element a ajouter");
   if (event.key === "4" || event.key === "'") equipItem("flashlight");
 
   if (event.key === "r" || event.key === "R") unequipItem(); // Permet de retirer l'objet de la main
@@ -401,7 +515,7 @@ window.addEventListener("keydown", (event) => {
       flashlightOn = !flashlightOn; // Alterne l'état de la lampe torche
 
       if (flashlightOn) {
-          equippedItem.spotlight.intensity = 0.8; // Allume la lumière
+          equippedItem.spotlight.intensity = 10; // Allume la lumière
       } else {
           equippedItem.spotlight.intensity = 0; // Éteint la lumière
       }
