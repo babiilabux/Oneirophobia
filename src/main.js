@@ -41,7 +41,7 @@ camera.minZ = 0.1;  // Vue des objets proches
 
 // Lumière
 const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-light.intensity = 1.005;
+light.intensity = 0.05;
 
 
 // Création du sol

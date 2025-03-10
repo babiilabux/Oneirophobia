@@ -1,0 +1,5 @@
+CE DOCUMENT A POUR BUT DE REPRENDRE TOUTES LES PETITES TOUJOURS UTILES POUR MIEUX AVANCER DANS LE PROJET 
+
+
+Changer de branche du git : 
+git checkout [nom de la branche]
