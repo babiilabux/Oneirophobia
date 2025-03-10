@@ -8,12 +8,12 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^6.2.0"
-  },
   "dependencies": {
-    "@babylonjs/core": "^7.51.3",
-    "@babylonjs/gui": "^7.51.3",
-    "@babylonjs/loaders": "^7.52.1"
+    "@babylonjs/core": "7.48.3",
+    "@babylonjs/gui": "7.48.3",
+    "@babylonjs/inspector": "7.48.3",
+    "@babylonjs/loaders": "7.48.3",
+    "babylonjs-loaders": "^7.52.1",
+    "vite": "6.1.0"
   }
 }

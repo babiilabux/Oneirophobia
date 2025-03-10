@@ -14,6 +14,7 @@ import "@babylonjs/loaders/glTF";
 
 
 
+
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { AdvancedDynamicTexture, StackPanel, TextBlock } from "@babylonjs/gui/2D";
 
@@ -40,7 +41,7 @@ camera.minZ = 0.1;  // Vue des objets proches
 
 // Lumière
 const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-light.intensity = 0.005;
+light.intensity = 1.005;
 
 
 // Création du sol
@@ -310,6 +311,11 @@ const rightHand = leftHand.clone("rightHand");
 // key.checkCollisions = true;
 
 
+BABYLON.SceneLoader.Append("/models/", "flashlight.glb", scene, function (scene) {
+  console.log("Modèle chargé avec succès !");
+}, null, function (scene, message) {
+  console.error("Erreur de chargement :", message);
+});
 
 
 const flashlightMaterial = new StandardMaterial("flashlightMat", scene);
