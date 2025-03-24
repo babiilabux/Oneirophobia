@@ -32,7 +32,6 @@ light.intensity = 0;
 // Création de la caméradd
 const camera = new FreeCamera("FreeCamera", new Vector3(0, 2, 0), scene);
 camera.setTarget(new BABYLON.Vector3(0, 2.3, 2)); 
-camera.attachControl(canvas, true);  // Permet à la caméra de suivre la souris sans clic
 camera.speed = 0.1;
 camera.angularSensibility = 1000;
 camera.checkCollisions = true;  // Vérifie les collisions
@@ -41,6 +40,11 @@ camera.ellipsoid = new Vector3(0.5, 1, 0.5); // Collisions avec les murs
 camera.minZ = 0.1;  // Vue des objets proches
 
 
+// Configurer le contrôle clavier pour ZQSD
+camera.inputs.attached.keyboard.keysUp.push(90);    // Z : Déplacement vers le haut (avant)
+camera.inputs.attached.keyboard.keysLeft.push(81);  // Q : Déplacement vers la gauche
+camera.inputs.attached.keyboard.keysDown.push(83);  // S : Déplacement vers le bas (arrière)
+camera.inputs.attached.keyboard.keysRight.push(68); // D : Déplacement vers la droite
 
 const introText = [
     "Appuie sur espace",
@@ -104,11 +108,14 @@ let equippedItem = null; // Objet actuellement équipé
 let flashlightOn = false;
 
 window.addEventListener("keydown", (event) => {
-    if (event.key === "e" || event.key === "E") inventoryPanel.isVisible = !inventoryPanel.isVisible;  // Afficher/Masquer l'inventaire
+    if (event.key === "e" || event.key === "E" || event.key === "i" || event.key === "I") inventoryPanel.isVisible = !inventoryPanel.isVisible;  // Afficher/Masquer l'inventaire
 
     if (event.key === "1" || event.key === "&") equipItem("flashlight");
+    if (event.key === "2" || event.key === "é") equipItem("key"); // Ajoute la touche "2" pour équiper la clé
+
 
     if (event.key === "r" || event.key === "R") unequipItem(); // Permet de retirer l'objet de la main
+    
 
     // Action sur la touche espace pour allumer/éteindre la lumière de la lampe torche
     if (event.key === " " && equippedItem && equippedItem.spotlight) {
@@ -180,6 +187,8 @@ function startGame() {
 
     // Rendre la lampe torche visible après la fin du texte
     flashlight.setEnabled(true);  // Rendre visible la lampe torche
+    camera.attachControl(canvas, true);  // Permet à la caméra de suivre la souris sans clic
+
 
     // Permettre au joueur de commencer à jouer
     canPlay = true;
@@ -473,10 +482,17 @@ door.checkCollisions = true;  // Activer les collisions pour ce mesh
 let doorOpen = false;
 
 scene.onKeyboardObservable.add((kbInfo) => {
-    if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN && kbInfo.event.key === "a") {
+    // Vérifie si la touche pressée est l'espace
+    if (kbInfo.type === BABYLON.KeyboardEventTypes.KEYDOWN && kbInfo.event.key === " ") {
+
+        // Vérifie si le joueur est près de la porte (distance < 2.5 par exemple)
         const distance = BABYLON.Vector3.Distance(door.position, camera.position);
-        if (distance < 2.5 && !doorOpen) {
-            openDoor();
+        // Vérifie si le joueur a la clé en main (equippedItem doit être la clé)
+        if (distance < 2.5 && equippedItem && equippedItem.name === '__root__') {
+            // Si les conditions sont remplies, ouvre la porte
+            if (!doorOpen) {
+                openDoor();  // Fonction pour ouvrir la porte
+            }
         }
     }
 });
@@ -602,8 +618,10 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "common_table_and_chair.glb", sce
 //     meuble.log("Bureau importé, positionné et visible seulement dans l'obscurité !");
 // });
 
+let key=null;
+
 BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshes) {
-    let key = meshes[0]; // Récupérer l'objet principal du modèle
+    key = meshes[0]; // Récupérer l'objet principal du modèle
 
     // Ajuster la position pour placer le modèle dans la scène
     key.position = new BABYLON.Vector3(2, 1.05, -2); // Ajuste en fonction de ta scène
@@ -620,6 +638,9 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshe
 
     // Activer les collisions
     key.checkCollisions = true;
+    meshes.forEach((mesh, index) => {
+        console.log(`Mesh ${index}: ${mesh.name}`);
+    });
 
     // Créer un matériau émissif pour le bureau
     let emissiveMaterial = new BABYLON.StandardMaterial("emissiveMat", scene);
@@ -630,7 +651,7 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshe
     // Appliquer le matériau émissif à chaque mesh du modèle
     meshes.forEach((mesh) => {
         mesh.material = emissiveMaterial; // Appliquer le matériau à chaque partie du modèle
-        mesh.isPickable = true; // Empêcher de cliquer sur le modèle
+        mesh.isPickable = true; 
     });
 
     scene.ambientColor = new BABYLON.Color3(0, 0, 0); // Éclairage ambiant sombre pour forcer l'obscurité
@@ -750,8 +771,8 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "fps_arms.glb", scene, function (
         
         // Position des bras par rapport à la caméra
         arms.position = camera.position
-            .add(cameraForward.scale(0.1)) // Distance devant la caméra
-            .add(new BABYLON.Vector3(0, -0.2, 0)); // Ajustement vertical
+            .add(cameraForward.scale(0.05)) // Distance devant la caméra
+            .add(new BABYLON.Vector3(0, -0.1, 0)); // Ajustement vertical
         
         arms.rotation = camera.rotation; // Synchronisation avec la caméra
     });
@@ -797,8 +818,7 @@ scene.actionManager.registerAction(new ExecuteCodeAction(
 
 
 
-let keyInHand = null; // Variable pour stocker la clé dans la main
-
+let keyHand = null;
 // Fonction pour équiper un objet
 function equipItem(item) {
     if (!inventory[item]) return; // Si l'objet n'est pas dans l'inventaire, ne rien faire
@@ -806,9 +826,35 @@ function equipItem(item) {
     unequipItem(); // Retire l'objet précédemment équipé
 
     switch (item) {
+        case "key": // 🔑 Ajout de la clé avec le modèle 3D
+            // Charger le modèle de la clé (clé.glb)
+            BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshes) {
+                let keyHand = meshes[0]; // Récupère le modèle de la clé (premier mesh)                
+                // Positionne la clé dans la main droite du personnage
+                keyHand.parent = camera;
+                keyHand.position = new BABYLON.Vector3(0.11, 0, 0.4); // On va ajuster cette position plus bas
+                keyHand.scaling = new BABYLON.Vector3(0.0003, 0.0003, 0.0003); // Ajuste l'échelle pour que la clé soit à la bonne taille
+                let emissiveMaterial = new BABYLON.StandardMaterial("emissiveMat", scene);
+                emissiveMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Couleur bleue douce qui émane du bureau
+                emissiveMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);  // Pas de couleur diffuse, reste noir dans la lumière
+                emissiveMaterial.specularColor = new BABYLON.Color3(0, 0, 0);  // Pas de spéculaire, aucune brillance
+            
+                // Appliquer le matériau émissif à chaque mesh du modèle
+                meshes.forEach((mesh) => {
+                    mesh.material = emissiveMaterial; // Appliquer le matériau à chaque partie du modèle
+                });
+                equippedItem = keyHand;
+
+            });
+            break;
+        
         case "flashlight": // Équipement de la lampe torche
+
             equippedItem = MeshBuilder.CreateCylinder("flashlightInHand", { height: 0.3, diameter: 0.1 }, scene);
             equippedItem.material = flashlightMaterial;
+            equippedItem.parent = camera;
+            equippedItem.position = new BABYLON.Vector3(0.15, -0.1, 0.5); // Ajuste pour qu'elle soit dans la main
+            equippedItem.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0); // Alignement correct
 
             // Création du faisceau lumineux
             const spotlight = new BABYLON.SpotLight(
@@ -830,6 +876,7 @@ function equipItem(item) {
 
             equippedItem.spotlight = spotlight; // Attache le faisceau lumineux à l'objet équipé
 
+            
             // Mise à jour de la position et direction du faisceau lumineux à chaque frame
             scene.onBeforeRenderObservable.add(() => {
                 spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position de la lumière à la caméra + une petite offset
@@ -847,19 +894,27 @@ function equipItem(item) {
 
     // Fixe l'objet équipé à la main droite
     if (equippedItem) {
-        equippedItem.parent = rightHand; // Attache l'objet à la main droite
-        equippedItem.position = new BABYLON.Vector3(0, -0.15, 0.2); // Position relative à la main (ajustée pour que l'objet soit dans la main)
-        equippedItem.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0); // Rotation ajustée pour aligner l'objet avec la main
+        equippedItem.parent = rightHand;
+        equippedItem.position = new Vector3(0, 0, 0.15); // Position relative à la main
+        equippedItem.rotation = new Vector3(Math.PI / 2, 0, 0); // Rotation ajustée
     }
 }
 
+
+
 // Fonction pour déséquiper l'objet de la main
 function unequipItem() {
+    console.log(equippedItem);
     if (equippedItem) {
         // Si l'objet équipé est une lampe torche, supprimer la lumière
         if (equippedItem.spotlight) {
             equippedItem.spotlight.dispose(); // Supprime la lumière associée
             equippedItem.spotlight = null; // Réinitialise la référence à la lumière
+        }
+        if (equippedItem.name === "keyHand") {
+            console.log("Retire key")
+            keyHand.parent = null;  // Détache la clé de la main
+            keyHand.dispose(); // Supprime la clé de la scène
         }
         
         equippedItem.dispose(); // Supprime l'objet de la main
@@ -879,7 +934,6 @@ function collectItem(item) {
             }
             break;
         case "flashlight": // Gestion de la lampe torche
-            console.log("Flashlight collected!");
             if (!inventory.flashlight) {
                 inventory.flashlight = true;
                 flashlight.dispose(); // Supprime la lampe torche de la scène
@@ -889,13 +943,14 @@ function collectItem(item) {
     }
 }
 
-// Interaction avec les objets dans la salle
 scene.onPointerDown = function (evt, pickResult) {
     if (pickResult.hit) {
         console.log(pickResult.pickedMesh.name);
         if (pickResult.pickedMesh.name === "flashlight") collectItem("flashlight");
+        if (pickResult.pickedMesh.name === "Object_2") collectItem("key"); // Détection de la clé
     }
 };
+
     
 
 
