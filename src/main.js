@@ -30,8 +30,8 @@ light.intensity = 0;
 
 
 // Création de la caméradd
-const camera = new FreeCamera("FreeCamera", new Vector3(0, 1.8, 0), scene);
-camera.setTarget(new BABYLON.Vector3(0, 2, 2)); 
+const camera = new FreeCamera("FreeCamera", new Vector3(0, 2, 0), scene);
+camera.setTarget(new BABYLON.Vector3(0, 2.3, 2)); 
 camera.attachControl(canvas, true);  // Permet à la caméra de suivre la souris sans clic
 camera.speed = 0.1;
 camera.angularSensibility = 1000;
@@ -57,6 +57,12 @@ const introText = [
     "Je comprends rien",
     "Inconnu : Tu verras. Pour l'instant, récupère la lampe",
     "Inconnu : Elle te montrera la réalité",
+    "*Déplace la caméra avec la souris*",
+    "*Bouge avec les flèches*",
+    "*Active ton inventaire avec E*",
+    "*Récupère un objet en cliquant dessus*",
+    "*Equipe le avec la touche associée [1-9]*",
+    "*Interragit avec espace*",
 ];
 
 let currentTextIndex = 0;
@@ -92,26 +98,6 @@ function updateInventoryText() {
     inventoryText.text = inventoryItems;
 }
 
-// Fonction pour collecter un objet
-function collectItem(item) {
-    console.log("Objet collecté : " + item);
-    switch (item) {
-        case "key":
-            if (!inventory.key) {
-                inventory.key = true;
-                key.dispose(); // Supprime la clé de la scène
-                updateInventoryText();
-            }
-            break;
-        case "flashlight": // Gestion de la lampe torche
-            if (!inventory.flashlight) {
-                inventory.flashlight = true;
-                flashlight.dispose(); // Supprime la lampe torche de la scène
-                updateInventoryText();
-            }
-            break;
-    }
-}
 
 // Fonction pour équiper un objet
 let equippedItem = null; // Objet actuellement équipé
@@ -159,7 +145,22 @@ function showIntroText() {
 function nextIntroText() {
     currentTextIndex++;
     if (currentTextIndex < introText.length) {
+        // Mettre à jour le texte avec la nouvelle phrase
         textBlock.text = introText[currentTextIndex];
+
+        // Appliquer la mise en forme pour les phrases de contrôle
+        if (introText[currentTextIndex].includes("*")) {
+            textBlock.color = "white";  // Texte en violet
+            textBlock.fontStyle = "bold italic"; // Texte en gras et en italique
+        } 
+        else if (introText[currentTextIndex].includes("Inconnu")) {
+            textBlock.color = "purple";  // Texte en violet
+            textBlock.fontStyle = "italic"; // Texte en gras et en italique
+        }
+        else {
+            textBlock.color = "white";  // Texte normal
+            textBlock.fontStyle = "normal";  // Texte normal (pas de gras/italique)
+        }
     } else {
         // Si toutes les phrases ont été affichées, cacher l'interface et commencer le jeu après un petit délai
         setTimeout(startGame, 300);  // Ajout d'un délai de 300 ms pour garantir que le texte est bien affiché avant de commencer
@@ -210,8 +211,6 @@ function initGame() {
 }
 
 initGame();
-
-
 
 
 
@@ -292,12 +291,12 @@ const ground2 = BABYLON.MeshBuilder.CreateGround("ground2", { width: 10, height:
 // Création du matériau PBR
 const ground2Material = new BABYLON.PBRMaterial("ground2Material", scene);
 // Charger la texture diffuse (Albedo)
-ground2Material.albedoTexture = new BABYLON.Texture("../Textures/rocky_terrain_02_diff_4k.jpg", scene);
-ground2Material.albedoTexture.uScale = 3; // Plus grand = motifs plus petits
-ground2Material.albedoTexture.vScale = 3; // Plus grand = motifs plus petits
-ground2Material.emissiveTexture = new BABYLON.Texture("../Textures/rocky_terrain_02_diff_4k.jpg", scene);
-ground2Material.emissiveTexture.uScale = 3;
-ground2Material.emissiveTexture.vScale = 3;
+ground2Material.albedoTexture = new BABYLON.Texture("../Textures/dream_floor.jpg", scene);
+ground2Material.albedoTexture.uScale = 1; // Plus grand = motifs plus petits
+ground2Material.albedoTexture.vScale = 1; // Plus grand = motifs plus petits
+ground2Material.emissiveTexture = new BABYLON.Texture("../Textures/dream_floor.jpg", scene);
+ground2Material.emissiveTexture.uScale = 1;
+ground2Material.emissiveTexture.vScale = 1;
 // groundMaterial.bumpTexture.uScale = 3;
 // groundMaterial.bumpTexture.vScale = 3; reactiver si on active normal map
 // Charger la Normal Map (bleue)
@@ -305,13 +304,13 @@ ground2Material.bumpTexture = null;
 ground2Material.invertNormalMapX = true; 
 ground2Material.invertNormalMapY = true;
 // Charger la Roughness Map (définit la rugosité)
-ground2Material.metallicTexture = new BABYLON.Texture("../Textures/rocky_terrain_02_rough_4k.jpg", scene);
+ground2Material.metallicTexture = new BABYLON.Texture("../Textures/dream_floor.jpg", scene);
 ground2Material.useRoughnessFromMetallicTextureAlpha = false;
 ground2Material.useRoughnessFromMetallicTextureGreen = true; // Souvent stockée dans le canal vert
 // Ajuster la rugosité globale (1 = mat, 0 = brillant)
 ground2Material.roughness = 1;
 // Ajouter la Displacement Map (carte de déplacement)
-ground2Material.displacementTexture = new BABYLON.Texture("../Textures/rocky_terrain_02_disp_4k.jpg", scene);
+ground2Material.displacementTexture = new BABYLON.Texture("../Textures/dream_floor.jpg", scene);
 // Configurer la force du displacement (intensité du relief)
 ground2Material.displacementScale = 0.2; // Ajuster cette valeur pour un relief plus ou moins marqué
 ground2Material.displacementBias = 0;  // Ajuster le biais pour décaler le relief si nécessaire
@@ -742,34 +741,22 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "cupboard.glb", scene, function (
 });
 
 
-const handMaterial = new StandardMaterial("handMat", scene);
-handMaterial.diffuseColor = new Color3(0.8, 0.4, 0.2);
+BABYLON.SceneLoader.ImportMesh("", "/models/", "fps_arms.glb", scene, function (meshes) {
+    const arms = meshes[0]; // Supposons que les bras sont dans meshes[0]
+    arms.scaling = new BABYLON.Vector3(0.01, 0.01, 0.01); // Ajuste la taille si nécessaire
 
-const leftHand = MeshBuilder.CreateBox("leftHand", { width: 0.2, height: 0.1, depth: 0.3 }, scene);
-leftHand.material = handMaterial;
-
-const rightHand = leftHand.clone("rightHand");
-
-scene.onBeforeRenderObservable.add(() => {
-    if (leftHand && rightHand) {
+    scene.onBeforeRenderObservable.add(() => {
         const cameraForward = camera.getDirection(BABYLON.Vector3.Forward()).normalize();
-        const cameraRight = camera.getDirection(BABYLON.Vector3.Right()).normalize();
-
-        // Position des mains par rapport à la caméra
-        leftHand.position = camera.position
-            .add(cameraForward.scale(0.6))
-            .subtract(cameraRight.scale(0.3))
-            .add(new BABYLON.Vector3(0, -0.2, 0));
-
-        rightHand.position = camera.position
-            .add(cameraForward.scale(0.6))
-            .add(cameraRight.scale(0.3))
-            .add(new BABYLON.Vector3(0, -0.2, 0));
-
-        leftHand.rotation = camera.rotation;
-        rightHand.rotation = camera.rotation;
-    }
+        
+        // Position des bras par rapport à la caméra
+        arms.position = camera.position
+            .add(cameraForward.scale(0.1)) // Distance devant la caméra
+            .add(new BABYLON.Vector3(0, -0.2, 0)); // Ajustement vertical
+        
+        arms.rotation = camera.rotation; // Synchronisation avec la caméra
+    });
 });
+
 
 
 
@@ -812,65 +799,59 @@ scene.actionManager.registerAction(new ExecuteCodeAction(
 
 let keyInHand = null; // Variable pour stocker la clé dans la main
 
-
-
 // Fonction pour équiper un objet
+function equipItem(item) {
+    if (!inventory[item]) return; // Si l'objet n'est pas dans l'inventaire, ne rien faire
 
+    unequipItem(); // Retire l'objet précédemment équipé
 
-    function equipItem(item) {
-        if (!inventory[item]) return; // Si l'objet n'est pas dans l'inventaire, ne rien faire
+    switch (item) {
+        case "flashlight": // Équipement de la lampe torche
+            equippedItem = MeshBuilder.CreateCylinder("flashlightInHand", { height: 0.3, diameter: 0.1 }, scene);
+            equippedItem.material = flashlightMaterial;
 
-        unequipItem(); // Retire l'objet précédemment équipé
+            // Création du faisceau lumineux
+            const spotlight = new BABYLON.SpotLight(
+                "spotlight",
+                camera.position, // Position initiale : à la position de la caméra
+                camera.getDirection(Vector3.Forward()), // Direction alignée sur la caméra
+                Math.PI / 3, // Augmenter l'angle pour une diffusion plus large
+                2, // Exposant pour une atténuation plus douce
+                scene
+            );
 
-        switch (item) {
-            
-            case "flashlight": // Équipement de la lampe torche
-                equippedItem = MeshBuilder.CreateCylinder("flashlightInHand", { height: 0.3, diameter: 0.1 }, scene);
-                equippedItem.material = flashlightMaterial;
+            spotlight.diffuse = new Color3(0.1, 0.1, 1); // Lumière bleue
+            spotlight.specular = new Color3(1, 1, 1); // Garde la lumière blanche pour les reflets
+            spotlight.intensity = 100; // Augmente l'intensité de la lumière
+            spotlight.range = 20; // Augmente la portée du faisceau
+            spotlight.falloffType = BABYLON.Light.FALLOFF_EXPONENTIAL; // Atténuation exponentielle pour une transition plus fluide
+            spotlight.angle = Math.PI / 3; // Augmenter l'angle du faisceau pour un éclairage plus diffus
+            spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position légèrement devant la caméra
 
-                // Création du faisceau lumineux
-                const spotlight = new BABYLON.SpotLight(
-                    "spotlight",
-                    camera.position, // Position initiale : à la position de la caméra
-                    camera.getDirection(Vector3.Forward()), // Direction alignée sur la caméra
-                    Math.PI / 3, // Augmenter l'angle pour une diffusion plus large
-                    2, // Exposant pour une atténuation plus douce
-                    scene
-                );
+            equippedItem.spotlight = spotlight; // Attache le faisceau lumineux à l'objet équipé
 
-                spotlight.diffuse = new Color3(0.1, 0.1, 1); // Lumière bleue
-                spotlight.specular = new Color3(1, 1, 1); // Garde la lumière blanche pour les reflets
-                spotlight.intensity = 100; // Augmente l'intensité de la lumière
-                spotlight.range = 20; // Augmente la portée du faisceau
-                spotlight.falloffType = BABYLON.Light.FALLOFF_EXPONENTIAL; // Atténuation exponentielle pour une transition plus fluide
-                spotlight.angle = Math.PI / 3; // Augmenter l'angle du faisceau pour un éclairage plus diffus
-                spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position légèrement devant la caméra
+            // Mise à jour de la position et direction du faisceau lumineux à chaque frame
+            scene.onBeforeRenderObservable.add(() => {
+                spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position de la lumière à la caméra + une petite offset
+                spotlight.direction = camera.getDirection(Vector3.Forward()); // Direction alignée avec la caméra
+            });
 
-                equippedItem.spotlight = spotlight; // Attache le faisceau lumineux à l'objet équipé
+            // Optionnel : Ajouter un `shadowGenerator` pour des ombres douces (soft shadows)
+            const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotlight);
+            shadowGenerator.usePoissonSampling = true; // Améliore la qualité des ombres en rendant les bords plus doux
+            shadowGenerator.setDarkness(0.4); // Ajuste la densité de l'ombre pour des ombres plus subtiles
+            shadowGenerator.bias = 0.02; // Ajuste le biais pour éviter les artefacts d'ombre
 
-                
-                // Mise à jour de la position et direction du faisceau lumineux à chaque frame
-                scene.onBeforeRenderObservable.add(() => {
-                    spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position de la lumière à la caméra + une petite offset
-                    spotlight.direction = camera.getDirection(Vector3.Forward()); // Direction alignée avec la caméra
-                });
-
-                // Optionnel : Ajouter un `shadowGenerator` pour des ombres douces (soft shadows)
-                const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotlight);
-                shadowGenerator.usePoissonSampling = true; // Améliore la qualité des ombres en rendant les bords plus doux
-                shadowGenerator.setDarkness(0.4); // Ajuste la densité de l'ombre pour des ombres plus subtiles
-                shadowGenerator.bias = 0.02; // Ajuste le biais pour éviter les artefacts d'ombre
-
-                break;
-        }
-
-        // Fixe l'objet équipé à la main droite
-        if (equippedItem) {
-            equippedItem.parent = rightHand;
-            equippedItem.position = new Vector3(0, 0, 0.15); // Position relative à la main
-            equippedItem.rotation = new Vector3(Math.PI / 2, 0, 0); // Rotation ajustée
-        }
+            break;
     }
+
+    // Fixe l'objet équipé à la main droite
+    if (equippedItem) {
+        equippedItem.parent = rightHand; // Attache l'objet à la main droite
+        equippedItem.position = new BABYLON.Vector3(0, -0.15, 0.2); // Position relative à la main (ajustée pour que l'objet soit dans la main)
+        equippedItem.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0); // Rotation ajustée pour aligner l'objet avec la main
+    }
+}
 
 // Fonction pour déséquiper l'objet de la main
 function unequipItem() {
@@ -886,14 +867,36 @@ function unequipItem() {
     }
 }
 
+// Fonction pour collecter un objet
+function collectItem(item) {
+    console.log("Objet collecté : " + item);
+    switch (item) {
+        case "key":
+            if (!inventory.key) {
+                inventory.key = true;
+                key.dispose(); // Supprime la clé de la scène
+                updateInventoryText();
+            }
+            break;
+        case "flashlight": // Gestion de la lampe torche
+            console.log("Flashlight collected!");
+            if (!inventory.flashlight) {
+                inventory.flashlight = true;
+                flashlight.dispose(); // Supprime la lampe torche de la scène
+                updateInventoryText();
+            }
+            break;
+    }
+}
+
 // Interaction avec les objets dans la salle
 scene.onPointerDown = function (evt, pickResult) {
     if (pickResult.hit) {
         console.log(pickResult.pickedMesh.name);
-        if (pickResult.pickedMesh === flashlight) collectItem("flashlight");
+        if (pickResult.pickedMesh.name === "flashlight") collectItem("flashlight");
     }
 };
-
+    
 
 
 
