@@ -11,10 +11,6 @@ import {
   PBRMaterial
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
-
-
-
-
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { AdvancedDynamicTexture, StackPanel, TextBlock } from "@babylonjs/gui/2D";
 
