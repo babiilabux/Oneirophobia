@@ -13,6 +13,7 @@ import {
 import "@babylonjs/loaders/glTF";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "@babylonjs/gui/2D";
+// import { playSound } from "./core/sounds.js"; A VOIR PLUS TARD 
 
 
 // Récupération du canvas
@@ -167,7 +168,7 @@ function nextIntroText() {
     }
 }
 
-// Démarrer le jeu et masquer l'interface d'introduction
+
 // Démarrer le jeu et masquer l'interface d'introduction
 function startGame() {
     // Masquer l'interface du texte d'introduction (disposer du panel)
@@ -212,6 +213,30 @@ function initGame() {
 
 initGame();
 
+
+(async () => {
+    const audioEngine = await BABYLON.CreateAudioEngineAsync();
+
+    // Create sounds here, but don't call `play()` on them, yet ...
+
+    // Wait until audio engine is ready to play sounds.
+    await audioEngine.unlock();
+
+    // Start sound playback ...
+})();
+
+const audioEngine = await BABYLON.CreateAudioEngineAsync();
+
+const ambient = await BABYLON.CreateSoundAsync("ambient",
+    "/public/sounds/ambiance_intro.mp3"
+);
+
+// Wait until audio engine is ready to play sounds.
+await audioEngine.unlock();
+
+// Set the sound to loop
+ambient.loop = true;
+ambient.play()// lancer le son 
 
 
 // function createMenu() {
@@ -896,10 +921,9 @@ scene.onPointerDown = function (evt, pickResult) {
         if (pickResult.pickedMesh.name === "flashlight") collectItem("flashlight");
     }
 };
+
+
     
-
-
-
 // Boucle de rendu
 engine.runRenderLoop(() => scene.render());
 window.addEventListener("resize", () => engine.resize());
