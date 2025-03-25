@@ -195,6 +195,7 @@ function startGame() {
     
 }
 
+-
 
 // Créer la lampe torche
 function createFlashlight() {
@@ -224,29 +225,16 @@ initGame();
 // lancement du son
 (async () => {
   const audioEngine = await BABYLON.CreateAudioEngineAsync();
-
-  // Create sounds here, but don't call `play()` on them, yet ...
-
-  // Wait until audio engine is ready to play sounds.
   await audioEngine.unlock();
-
-  // Start sound playback ...
 })();
 
 const audioEngine = await BABYLON.CreateAudioEngineAsync();
-
 const ambient = await BABYLON.CreateSoundAsync("ambient",
   "/public/sounds/ambiance_intro.mp3"
 );
 
-// Set the sound to loop
 ambient.loop = true;
-
-// Wait until audio engine is ready to play sounds.
-await audioEngine.unlock();
-
-// Start playing the sound
-ambient.play();
+ambient.play();// jouer le son 
 
 
 // function createMenu() {
