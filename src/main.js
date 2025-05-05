@@ -12,7 +12,7 @@ import {
   } from "@babylonjs/core";
   import "@babylonjs/loaders/glTF";
   import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
-  import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "@babylonjs/gui/2D";
+  import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control, Slider } from "@babylonjs/gui/2D";
   
   
   // Récupération du canvas
@@ -50,17 +50,15 @@ import {
       "Appuie sur espace",
       "Ugh... que se passe-t-il ?",
       "Où suis-je ?",
-      "Inconnu : ...",
-      "Inconnu : Aide nous",
+      "Inconnu : Dans le monde des rêves",
       "Qui parle ?",
       "Répondez !",
-      "Inconnu : Tu dois...",
-      "Inconnu : ...Sauver le monde des rêves",
-      "Inconnu : Prépare-toi à affronter tes peurs...",
-      "Inconnu : A découvrir une nouvelle réalité",
+      "Inconnu : Je ne peux rien te dire",
+      "Inconnu : Mais pour l'instant tu es coincé ici",
       "Je comprends rien",
-      "Inconnu : Tu verras. Pour l'instant, récupère la lampe",
-      "Inconnu : Elle te montrera la réalité",
+      "Inconnu : Pour l'instant, je peux juste te donner ce 'baton'",
+      "Inconnu : L'activer te permettra de voir temporairement la réalité",
+      "Inconnu : Mais n'oublie pas, ce n'est que temporaire.",
       "*Déplace la caméra avec la souris*",
       "*Bouge avec les flèches*",
       "*Active ton inventaire avec E*",
@@ -69,6 +67,7 @@ import {
       "*Interragit avec espace*",
   ];
   
+  let canAdvanceText = true;
   let currentTextIndex = 0;
   let textBlock = null;
   let canPlay = false;
@@ -80,27 +79,85 @@ import {
   flashlightMaterial.diffuseColor = new BABYLON.Color3(1, 1, 0); // Jaune vif
   flashlightMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Lampe torche visible, bleue sous la spotlight
   
+  
+  
+  
   // Interface de l'inventaire
+  // Nouvelle interface de l'inventaire
   const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+  
   const inventoryPanel = new BABYLON.GUI.StackPanel();
   inventoryPanel.isVisible = false;
   inventoryPanel.width = "300px";
-  inventoryPanel.height = "200px";
-  inventoryPanel.background = "rgba(0, 0, 0, 0.5)"; // Fond transparent noir
+  inventoryPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+  inventoryPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+  inventoryPanel.background = "rgba(0, 0, 0, 0.8)";
+  inventoryPanel.paddingTop = "10px";
+  inventoryPanel.paddingLeft = "10px";
+  inventoryPanel.paddingRight = "10px";
   advancedTexture.addControl(inventoryPanel);
   
-  const inventoryText = new BABYLON.GUI.TextBlock();
-  inventoryText.text = "Sac à dos :\n(vide)";
-  inventoryText.color = "white";
-  inventoryPanel.addControl(inventoryText);
+  // Titre
+  const titleText = new BABYLON.GUI.TextBlock();
+  titleText.text = "Inventaire";
+  titleText.height = "40px";
+  titleText.color = "white";
+  titleText.fontSize = 24;
+  titleText.paddingBottom = "10px";
+  inventoryPanel.addControl(titleText);
+  
+  // Liste des objets
+  const itemList = new BABYLON.GUI.StackPanel();
+  itemList.height = "150px";
+  itemList.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+  inventoryPanel.addControl(itemList);
+  
+  // Zone de description
+  const itemDescription = new BABYLON.GUI.TextBlock();
+  itemDescription.text = "Sélectionnez un objet pour voir sa description";
+  itemDescription.color = "white";
+  itemDescription.fontSize = 16;
+  itemDescription.textWrapping = true;
+  itemDescription.height = "60px";
+  itemDescription.paddingTop = "10px";
+  inventoryPanel.addControl(itemDescription);
+  
   
   // Fonction pour mettre à jour l'inventaire
   function updateInventoryText() {
-      let inventoryItems = "Sac à dos :\n";
-      if (inventory.flashlight) inventoryItems += "[1] Lampe torche\n";
-      if (inventory.key) inventoryItems += "[2] Clé\n";
-      inventoryText.text = inventoryItems;
+      itemList.clearControls(); // Nettoyer la liste d'objets
+  
+      if (inventory.flashlight) {
+          const flashlightButton = BABYLON.GUI.Button.CreateSimpleButton("flashlightBtn", "Lampe torche");
+          flashlightButton.width = "100%";
+          flashlightButton.height = "30px";
+          flashlightButton.color = "white";
+          flashlightButton.background = "#444";
+          flashlightButton.onPointerUpObservable.add(() => {
+              itemDescription.text = "Lampe torche : Permet d'éclairer les zones sombres.";
+              equipItem("flashlight");
+          });
+          itemList.addControl(flashlightButton);
+      }
+  
+      if (inventory.key) {
+          const keyButton = BABYLON.GUI.Button.CreateSimpleButton("keyBtn", "Clé");
+          keyButton.width = "100%";
+          keyButton.height = "30px";
+          keyButton.color = "white";
+          keyButton.background = "#444";
+          keyButton.onPointerUpObservable.add(() => {
+              itemDescription.text = "Clé : Permet d’ouvrir une porte verrouillée.";
+              equipItem("key");
+          });
+          itemList.addControl(keyButton);
+      }
+  
+      if (!inventory.flashlight && !inventory.key) {
+          itemDescription.text = "(Inventaire vide)";
+      }
   }
+  
   
   
   // Fonction pour équiper un objet
@@ -109,7 +166,10 @@ import {
   
   window.addEventListener("keydown", (event) => {
       if (event.key === "e" || event.key === "E" || event.key === "i" || event.key === "I") inventoryPanel.isVisible = !inventoryPanel.isVisible;  // Afficher/Masquer l'inventaire
-  
+      if (event.key === "Escape") {
+          puzzlePanel.isVisible = false;
+          inventoryPanel.isVisible=false;
+      }
       if (event.key === "1" || event.key === "&") equipItem("flashlight");
       if (event.key === "2" || event.key === "é") equipItem("key"); // Ajoute la touche "2" pour équiper la clé
   
@@ -118,15 +178,15 @@ import {
       
   
       // Action sur la touche espace pour allumer/éteindre la lumière de la lampe torche
-      if (event.key === " " && equippedItem && equippedItem.spotlight) {
-          flashlightOn = !flashlightOn; // Alterne l'état de la lampe torche
+      // if (event.key === " " && equippedItem && equippedItem.spotlight) {
+      //     flashlightOn = !flashlightOn; // Alterne l'état de la lampe torche
   
-          if (flashlightOn) {
-              equippedItem.spotlight.intensity = 100; // Allume la lumière
-          } else {
-              equippedItem.spotlight.intensity = 0; // Éteint la lumière
-          }
-      }
+      //     if (flashlightOn) {
+      //         equippedItem.spotlight.intensity = 100; // Allume la lumière
+      //     } else {
+      //         equippedItem.spotlight.intensity = 0; // Éteint la lumière
+      //     }
+      // }
   });
   
   // Créer et afficher les textes d'introduction
@@ -150,29 +210,32 @@ import {
   
   // Afficher le texte suivant
   function nextIntroText() {
+      if (!canAdvanceText) return;
+  
+      canAdvanceText = false; // Empêche les appels multiples rapides
+      setTimeout(() => {
+          canAdvanceText = true; // Autorise à nouveau le changement de texte après 1 seconde
+      }, 1000);
+  
       currentTextIndex++;
       if (currentTextIndex < introText.length) {
-          // Mettre à jour le texte avec la nouvelle phrase
           textBlock.text = introText[currentTextIndex];
   
-          // Appliquer la mise en forme pour les phrases de contrôle
           if (introText[currentTextIndex].includes("*")) {
-              textBlock.color = "white";  // Texte en violet
-              textBlock.fontStyle = "bold italic"; // Texte en gras et en italique
-          } 
-          else if (introText[currentTextIndex].includes("Inconnu")) {
-              textBlock.color = "purple";  // Texte en violet
-              textBlock.fontStyle = "italic"; // Texte en gras et en italique
-          }
-          else {
-              textBlock.color = "white";  // Texte normal
-              textBlock.fontStyle = "normal";  // Texte normal (pas de gras/italique)
+              textBlock.color = "white";
+              textBlock.fontStyle = "bold italic";
+          } else if (introText[currentTextIndex].includes("Inconnu")) {
+              textBlock.color = "purple";
+              textBlock.fontStyle = "italic";
+          } else {
+              textBlock.color = "white";
+              textBlock.fontStyle = "normal";
           }
       } else {
-          // Si toutes les phrases ont été affichées, cacher l'interface et commencer le jeu après un petit délai
-          setTimeout(startGame, 300);  // Ajout d'un délai de 300 ms pour garantir que le texte est bien affiché avant de commencer
+          setTimeout(startGame, 300);
       }
   }
+  
   
   // Démarrer le jeu et masquer l'interface d'introduction
   // Démarrer le jeu et masquer l'interface d'introduction
@@ -188,6 +251,7 @@ import {
       // Rendre la lampe torche visible après la fin du texte
       flashlight.setEnabled(true);  // Rendre visible la lampe torche
       camera.attachControl(canvas, true);  // Permet à la caméra de suivre la souris sans clic
+      
   
   
       // Permettre au joueur de commencer à jouer
@@ -195,7 +259,6 @@ import {
       
   }
   
-  -
   
   // Créer la lampe torche
   function createFlashlight() {
@@ -222,20 +285,34 @@ import {
   
   initGame();
   
-  // lancement du son
-  (async () => {
-    const audioEngine = await BABYLON.CreateAudioEngineAsync();
-    await audioEngine.unlock();
-  })();
   
-  const audioEngine = await BABYLON.CreateAudioEngineAsync();
-  const ambient = await BABYLON.CreateSoundAsync("ambient",
-    "/public/sounds/ambiance_intro.mp3"
-  );
   
-  ambient.loop = true;
-  ambient.play();// jouer le son 
-  
+  // (async () => {
+  //     const audioEngine = await BABYLON.CreateAudioEngineAsync();
+    
+  //     // Create sounds here, but don't call `play()` on them, yet ...
+    
+  //     // Wait until audio engine is ready to play sounds.
+  //     await audioEngine.unlock();
+    
+  //     // Start sound playback ...
+  //   })();
+    
+  //   const audioEngine = await BABYLON.CreateAudioEngineAsync();
+    
+  //   const ambient = await BABYLON.CreateSoundAsync("ambient",
+  //     "/sounds/sinnesloschen-beam-117362.mp3"
+  //   );
+    
+  //   // Set the sound to loop
+  //   ambient.loop = true;
+    
+  //   // Wait until audio engine is ready to play sounds.
+  //   await audioEngine.unlock();
+    
+  //   // Start playing the sound
+  //   ambient.play();
+    
   
   // function createMenu() {
   //     // Création du panneau d'interface
@@ -387,6 +464,169 @@ import {
   wall2.rotation = new BABYLON.Vector3(0, -Math.PI / 2, 0); // Orientation vers la gauche
   wall2.checkCollisions = true;
   
+  
+  
+  const tableau1Material = new BABYLON.PBRMaterial("tableau1Mat", scene);
+  
+  // Texture de base (albedo)
+  tableau1Material.albedoTexture = new BABYLON.Texture("../Textures/tableau1.png", scene);
+  tableau1Material.albedoTexture.level = 0.8; // Ajuste la luminosité
+  
+  // Éviter les reflets indésirables
+  tableau1Material.metallic = 0.0; 
+  tableau1Material.roughness = 0.8; // Ajuste selon la rugosité du bois
+  
+  // Texture de rugosité
+  tableau1Material.metallicTexture = new BABYLON.Texture("../Textures/wood_roughness.jpg", scene);
+  tableau1Material.useRoughnessFromMetallicTextureAlpha = false; // Si la rugosité est stockée dans le canal alpha
+  
+  // Normal map pour le relief
+  tableau1Material.bumpTexture = new BABYLON.Texture("../Textures/wood_normal.jpg", scene);
+  tableau1Material.invertNormalMapX = true;
+  tableau1Material.invertNormalMapY = true;
+  
+  const tableau1 = BABYLON.MeshBuilder.CreatePlane("tableau1", { width: 2, height: 1.3 }, scene);
+  tableau1.position = new BABYLON.Vector3(-4.9, 2.15, 7.5); // Ajuste la position selon ton besoin
+  tableau1.rotation = new BABYLON.Vector3(0, -Math.PI / 2, 0); 
+  tableau1.material = tableau1Material;
+  
+  tableau1.material = tableau1Material;
+  
+  //tableau 2////
+  const tableau2Material = new BABYLON.PBRMaterial("tableau2Mat", scene);
+  tableau2Material.albedoTexture = new BABYLON.Texture("../Textures/tableau2.png", scene);
+  tableau2Material.albedoTexture.level = 0.8;
+  tableau2Material.metallic = 0.0; 
+  tableau2Material.roughness = 0.8;
+  tableau2Material.metallicTexture = new BABYLON.Texture("../Textures/wood_roughness.jpg", scene);
+  tableau2Material.useRoughnessFromMetallicTextureAlpha = false;
+  tableau2Material.bumpTexture = new BABYLON.Texture("../Textures/wood_normal.jpg", scene);
+  tableau2Material.invertNormalMapX = true;
+  tableau2Material.invertNormalMapY = true;
+  
+  // Désactiver le culling (ne fonctionne pas toujours)
+  tableau2Material.backFaceCulling = false;
+  
+  // Création du premier plan (face avant)
+  const tableau2 = BABYLON.MeshBuilder.CreatePlane("tableau2", { width: 2, height: 1.3 }, scene);
+  tableau2.position = new BABYLON.Vector3(-2.9, 2.15, 9.9);
+  tableau2.rotation = new BABYLON.Vector3(0, 0, 0); 
+  tableau2.material = tableau2Material;
+  
+  //tableau 3
+  const tableau3Material = new BABYLON.PBRMaterial("tableau3Mat", scene);
+  tableau3Material.albedoTexture = new BABYLON.Texture("../Textures/tableau3.png", scene);
+  tableau3Material.albedoTexture.level = 0.8;
+  tableau3Material.metallic = 0.0; 
+  tableau3Material.roughness = 0.8;
+  tableau3Material.metallicTexture = new BABYLON.Texture("../Textures/wood_roughness.jpg", scene);
+  tableau3Material.useRoughnessFromMetallicTextureAlpha = false;
+  tableau3Material.bumpTexture = new BABYLON.Texture("../Textures/wood_normal.jpg", scene);
+  tableau3Material.invertNormalMapX = true;
+  tableau3Material.invertNormalMapY = true;
+  
+  // Désactiver le culling (ne fonctionne pas toujours)
+  tableau3Material.backFaceCulling = false;
+  
+  // Création du premier plan (face avant)
+  const tableau3 = BABYLON.MeshBuilder.CreatePlane("tableau3", { width: 2, height: 1.3 }, scene);
+  tableau3.position = new BABYLON.Vector3(0, 2.15, 9.9);
+  tableau3.rotation = new BABYLON.Vector3(0, 0, 0); 
+  tableau3.material = tableau3Material;
+  
+  // Variable pour stocker l'angle actuel de rotation
+  let currentRotationtab1 = 0;
+  
+  // Ajouter un gestionnaire d'événements pour détecter le clic
+  tableau1.actionManager = new BABYLON.ActionManager(scene);
+  tableau1.actionManager.registerAction(
+      new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+          currentRotationtab1 += BABYLON.Tools.ToRadians(-22.5);
+          
+          // Appliquer la rotation autour de l'axe Y
+          tableau1.rotation.z = currentRotationtab1;
+      })
+  );
+  
+  let currentRotationtab2 = 0;
+  
+  // Ajouter un gestionnaire d'événements pour détecter le clic
+  tableau2.actionManager = new BABYLON.ActionManager(scene);
+  tableau2.actionManager.registerAction(
+      new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+          currentRotationtab2 += BABYLON.Tools.ToRadians(-22.5);
+          
+          // Appliquer la rotation autour de l'axe Y
+          tableau2.rotation.z = currentRotationtab2;
+      })
+  );
+  
+  let currentRotationtab3 = 0;
+  
+  // Ajouter un gestionnaire d'événements pour détecter le clic
+  tableau3.actionManager = new BABYLON.ActionManager(scene);
+  tableau3.actionManager.registerAction(
+      new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPickTrigger, function () {
+          currentRotationtab3 += BABYLON.Tools.ToRadians(-22.5);
+          
+          // Appliquer la rotation autour de l'axe Y
+          tableau3.rotation.z = currentRotationtab3;
+      })
+  );
+  
+  const tableauReveMaterial = new BABYLON.StandardMaterial("tableauReveMat", scene);
+  tableauReveMaterial.diffuseColor = new BABYLON.Color3(1, 1, 0); // Jaune vif
+  tableauReveMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Lampe torche visible, bleue sous la spotlight
+  
+  const tableau1Reve = BABYLON.MeshBuilder.CreatePlane("tableau1Reve", { width: 1.8, height: 1.17 }, scene);
+  tableau1Reve.position = new BABYLON.Vector3(-4.85, 2.15, 7.5);
+  tableau1Reve.rotation = new BABYLON.Vector3(0, -Math.PI / 2, 0); 
+  tableau1Reve.material = tableauReveMaterial;
+  tableau1Reve.rotation.z = 135;
+  
+  const tableau2Reve = BABYLON.MeshBuilder.CreatePlane("tableau2Reve", { width: 1.8, height: 1.17 }, scene);
+  tableau2Reve.position = new BABYLON.Vector3(-2.9, 2.15, 9.85);
+  tableau2Reve.rotation = new BABYLON.Vector3(0, 0, 0); 
+  tableau2Reve.material = tableauReveMaterial;
+  tableau2Reve.rotation.z = 90;
+  
+  const tableau3Reve = BABYLON.MeshBuilder.CreatePlane("tableau3Reve", { width: 1.8, height: 1.17 }, scene);
+  tableau3Reve.position = new BABYLON.Vector3(0, 2.15, 9.85);
+  tableau3Reve.rotation = new BABYLON.Vector3(0, 0, 0); 
+  tableau3Reve.material = tableauReveMaterial;
+  tableau3Reve.rotation.z = -22.5;
+  
+  tableau1Reve.isPickable = false;
+  tableau2Reve.isPickable = false;
+  tableau3Reve.isPickable = false;
+  
+  
+  function checkLighting() {
+      let lightIntensity = 0;
+  
+      // Calculer l'intensité totale des lumières dans la scène
+      scene.lights.forEach(light => {
+          if (light.isEnabled() && light.intensity) {
+              lightIntensity += light.intensity;
+          }
+      });
+  
+      // Définir un seuil d'intensité lumineuse (ex : 0.5)
+      let seuilLuminosite = 0.5;
+  
+      // Ajuster la transparence du tableau en fonction de la lumière
+      if (lightIntensity > seuilLuminosite) {
+          tableau1Reve.visibility = 0;
+          tableau2Reve.visibility = 0;
+          tableau3Reve.visibility = 0;  // Rendre le tableau invisible
+      } else {
+          tableau1Reve.visibility = 1;
+          tableau2Reve.visibility = 1;
+          tableau3Reve.visibility = 1;  // Rendre le tableau visible
+      }
+  }
+  
+  
   // Mur 3 (droite)
   const wall3 = BABYLON.MeshBuilder.CreatePlane("wall3", { width: 10, height: 4 }, scene);
   wall3.material = wallMaterial;
@@ -531,25 +771,6 @@ import {
       scene.beginAnimation(door, 0, 30, false);
   }
   
-  function closeDoor() {
-    doorOpen = false;
-    const animation = new BABYLON.Animation(
-        "doorCloseAnimation",
-        "rotation.y",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-    );
-  
-    const keys = [
-        { frame: 0, value: Math.PI / 2 },
-        { frame: 30, value: 0 }
-    ];
-  
-    animation.setKeys(keys);
-    door.animations = [animation];
-    scene.beginAnimation(door, 0, 30, false);
-  }
   
   // Détection du joueur dans la deuxième salle
   scene.registerBeforeRender(() => {
@@ -580,10 +801,27 @@ import {
       bed.rotation.y = Math.PI / 2; // Tourne le lit de 90° si besoin
       bed.checkCollisions = true;
   
+      console.log("Lit importé et positionné !");
+      
+  });
+  
+  BABYLON.SceneLoader.ImportMesh("", "/models/", "book.glb", scene, function (meshes) {
+      let bed = meshes[0]; // Récupérer l'objet principal du modèle
+  
+      // Ajuster la position pour placer le lit dans un coin
+      bed.position = new BABYLON.Vector3(-2.7, 1.8, 4.25); // Ajuste en fonction de ta pièce
+  
+      // Mise à l'échelle pour s'assurer que le lit a la bonne taille
+      bed.scaling = new BABYLON.Vector3(1,1, 1); // Ajuste selon la taille du modèle
+  
+      // Rotation si nécessaire
+      bed.rotation.y = Math.PI / 2; // Tourne le lit de 90° si besoin
+      bed.checkCollisions = true;
   
       console.log("Lit importé et positionné !");
       
   });
+  
   BABYLON.SceneLoader.ImportMesh("", "/models/", "desk.glb", scene, function (meshes) {
       let desk = meshes[0]; // Récupérer l'objet principal du modèle
   
@@ -700,11 +938,10 @@ import {
       });
       
   });
-  
+  let safe=null;
   BABYLON.SceneLoader.ImportMesh("", "/models/", "antique_iron_safe.glb", scene, function (meshes) {
-      let safe = meshes[0]; // Récupérer l'objet principal du modèle
+      safe = meshes[0]; // Récupérer l'objet principal du modèle
   
-      // Ajuster la position pour placer le modèle dans la scène
       safe.position = new BABYLON.Vector3(4, 0.6, 9); // Ajuste en fonction de ta scène
   
       // Mise à l'échelle du modèle pour s'assurer qu'il a la bonne taille
@@ -831,11 +1068,16 @@ import {
   
   
   
-  
+  let equippedItemName = null; // Nom de l'objet équipé
   let keyHand = null;
   // Fonction pour équiper un objet
   function equipItem(item) {
       if (!inventory[item]) return; // Si l'objet n'est pas dans l'inventaire, ne rien faire
+      if (equippedItemName === item) {
+          unequipItem();
+          equippedItemName = null;
+          return;
+      }
   
       unequipItem(); // Retire l'objet précédemment équipé
   
@@ -858,52 +1100,60 @@ import {
                       mesh.material = emissiveMaterial; // Appliquer le matériau à chaque partie du modèle
                   });
                   equippedItem = keyHand;
+                  equippedItemName = item; // Met à jour le nom de l'objet équipé
+  
   
               });
               break;
           
-          case "flashlight": // Équipement de la lampe torche
+              case "flashlight": // Équipement de la lanterne
   
-              equippedItem = MeshBuilder.CreateCylinder("flashlightInHand", { height: 0.3, diameter: 0.1 }, scene);
-              equippedItem.material = flashlightMaterial;
-              equippedItem.parent = camera;
-              equippedItem.position = new BABYLON.Vector3(0.15, -0.1, 0.5); // Ajuste pour qu'elle soit dans la main
-              equippedItem.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0); // Alignement correct
+              BABYLON.SceneLoader.ImportMesh("", "/models/", "lantern.glb", scene, function (meshes) {
+                  equippedItem = meshes[0]; // Récupérer l'objet principal du modèle et l'assigner à equippedItem
+          
+                  // Ajuster la position et l'échelle
+                  equippedItem.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001); // Ajuste selon la taille du modèle
+                  equippedItem.parent = camera;
+                  equippedItem.position = new BABYLON.Vector3(0.15, -0.2, 0.5); // Ajuste pour qu'elle soit dans la main
+                  equippedItem.rotation = new BABYLON.Vector3(0, 0, 0); // Alignement correct
+          
+                  // Création du faisceau lumineux
+                  const spotlight = new BABYLON.SpotLight(
+                      "spotlight",
+                      camera.position, // Position initiale : à la position de la caméra
+                      camera.getDirection(BABYLON.Vector3.Forward()), // Direction alignée sur la caméra
+                      Math.PI / 3, // Augmenter l'angle pour une diffusion plus large
+                      2, // Exposant pour une atténuation plus douce
+                      scene
+                  );
+          
+                  spotlight.diffuse = new BABYLON.Color3(1, 0.8, 0.6); // Lumière chaude (teinte orangée)
+                  spotlight.specular = new BABYLON.Color3(1, 1, 1); // Garde les reflets blancs
+                  spotlight.intensity = 100; // Intensité élevée pour un bon éclairage
+                  spotlight.range = 20; // Augmente la portée du faisceau
+                  spotlight.falloffType = BABYLON.Light.FALLOFF_EXPONENTIAL; // Atténuation exponentielle pour une transition plus fluide
+                  spotlight.angle = Math.PI / 3; // Augmenter l'angle du faisceau pour un éclairage plus diffus
+                  spotlight.position = camera.position.add(camera.getDirection(BABYLON.Vector3.Forward()).scale(0.5)); // Position légèrement devant la caméra
+          
+                  equippedItem.spotlight = spotlight; // Attache le faisceau lumineux à l'objet équipé
+          
+                  // Mise à jour dynamique de la position et direction du faisceau lumineux
+                  scene.onBeforeRenderObservable.add(() => {
+                      spotlight.position = camera.position.add(camera.getDirection(BABYLON.Vector3.Forward()).scale(0.5)); // Position de la lumière à la caméra + un petit offset
+                      spotlight.direction = camera.getDirection(BABYLON.Vector3.Forward()); // Direction alignée avec la caméra
+                  });
+          
+                  // Ajout d'ombres douces (soft shadows)
+                  const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotlight);
+                  shadowGenerator.usePoissonSampling = true; // Améliore la qualité des ombres en rendant les bords plus doux
+                  shadowGenerator.setDarkness(0.4); // Ajuste la densité de l'ombre pour des ombres plus subtiles
+                  shadowGenerator.bias = 0.02; // Ajuste le biais pour éviter les artefacts d'ombre
+                  equippedItemName = item; // Met à jour le nom de l'objet équipé
   
-              // Création du faisceau lumineux
-              const spotlight = new BABYLON.SpotLight(
-                  "spotlight",
-                  camera.position, // Position initiale : à la position de la caméra
-                  camera.getDirection(Vector3.Forward()), // Direction alignée sur la caméra
-                  Math.PI / 3, // Augmenter l'angle pour une diffusion plus large
-                  2, // Exposant pour une atténuation plus douce
-                  scene
-              );
-  
-              spotlight.diffuse = new Color3(0.1, 0.1, 1); // Lumière bleue
-              spotlight.specular = new Color3(1, 1, 1); // Garde la lumière blanche pour les reflets
-              spotlight.intensity = 100; // Augmente l'intensité de la lumière
-              spotlight.range = 20; // Augmente la portée du faisceau
-              spotlight.falloffType = BABYLON.Light.FALLOFF_EXPONENTIAL; // Atténuation exponentielle pour une transition plus fluide
-              spotlight.angle = Math.PI / 3; // Augmenter l'angle du faisceau pour un éclairage plus diffus
-              spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position légèrement devant la caméra
-  
-              equippedItem.spotlight = spotlight; // Attache le faisceau lumineux à l'objet équipé
-  
-              
-              // Mise à jour de la position et direction du faisceau lumineux à chaque frame
-              scene.onBeforeRenderObservable.add(() => {
-                  spotlight.position = camera.position.add(camera.getDirection(Vector3.Forward()).scale(0.5)); // Position de la lumière à la caméra + une petite offset
-                  spotlight.direction = camera.getDirection(Vector3.Forward()); // Direction alignée avec la caméra
               });
-  
-              // Optionnel : Ajouter un `shadowGenerator` pour des ombres douces (soft shadows)
-              const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotlight);
-              shadowGenerator.usePoissonSampling = true; // Améliore la qualité des ombres en rendant les bords plus doux
-              shadowGenerator.setDarkness(0.4); // Ajuste la densité de l'ombre pour des ombres plus subtiles
-              shadowGenerator.bias = 0.02; // Ajuste le biais pour éviter les artefacts d'ombre
-  
+          
               break;
+          
       }
   
       // Fixe l'objet équipé à la main droite
@@ -957,15 +1207,222 @@ import {
       }
   }
   
-  scene.onPointerDown = function (evt, pickResult) {
+  
+  
+  //
+  // Importation de l'UI Babylon.js
+  // Panneau de notification
+  var notificationPanel = new BABYLON.GUI.Rectangle();
+  notificationPanel.width = "40%";
+  notificationPanel.height = "10%";
+  notificationPanel.cornerRadius = 10;
+  notificationPanel.color = "White";
+  notificationPanel.thickness = 3;
+  notificationPanel.background = "black";
+  notificationPanel.isVisible = false;
+  notificationPanel.top = "-30%"; // Position initiale hors écran
+  advancedTexture.addControl(notificationPanel);
+  
+  var notificationText = new BABYLON.GUI.TextBlock();
+  notificationText.text = "";
+  notificationText.color = "white";
+  notificationText.fontSize = 24;
+  notificationPanel.addControl(notificationText);
+  
+  // Fonction pour créer une animation avec callback
+  function animateNotification(property, from, to, onEnd = null) {
+      let animation = new BABYLON.Animation(
+          "notifAnim",
+          property,
+          60,
+          BABYLON.Animation.ANIMATIONTYPE_STRING,
+          BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+      );
+  
+      let keys = [];
+      keys.push({ frame: 0, value: from });
+      keys.push({ frame: 20, value: to });
+      animation.setKeys(keys);
+  
+      notificationPanel.animations = [];
+      notificationPanel.animations.push(animation);
+  
+      let animatable = scene.beginAnimation(notificationPanel, 0, 20, false);
+      
+      if (onEnd) {
+          animatable.onAnimationEnd = onEnd;
+      }
+  }
+  
+  // Fonction pour afficher une notification animée
+  function showNotification(message, color) {
+      notificationText.text = message;
+      notificationText.color = color;
+      notificationPanel.isVisible = true;
+  
+      // Masquer après 3 secondes avec une animation de sortie
+      setTimeout(() => {
+              notificationPanel.isVisible = false;
+      }, 3000);
+  }
+  
+  var puzzlePanel = new BABYLON.GUI.Rectangle();
+  puzzlePanel.width = "50%";
+  puzzlePanel.height = "40%";
+  puzzlePanel.cornerRadius = 10;
+  puzzlePanel.color = "White";
+  puzzlePanel.thickness = 4;
+  puzzlePanel.background = "black";
+  puzzlePanel.isVisible = false;
+  advancedTexture.addControl(puzzlePanel);
+  
+  // Création d'une grille pour aligner les chiffres horizontalement
+  var grid = new BABYLON.GUI.Grid();
+  grid.width = "100%";
+  grid.height = "80%";
+  
+  // Ajouter 4 colonnes pour chaque chiffre
+  grid.addColumnDefinition(0.25);
+  grid.addColumnDefinition(0.25);
+  grid.addColumnDefinition(0.25);
+  grid.addColumnDefinition(0.25);
+  
+  puzzlePanel.addControl(grid);
+  
+  // Code secret
+  var colors = ["red", "blue", "green", "cyan"];
+  var selectors = [];
+  var enteredCode = [0, 0, 0, 0];
+  var secretCode = [3, 2, 1, 6];  // Exemple de code secret
+  
+  
+  // Création des cases de chiffres avec des couleurs différentes
+  
+  
+  for (let i = 0; i < 4; i++) {
+      let stackPanel = new BABYLON.GUI.StackPanel();
+      stackPanel.width = "100%";
+  
+      let label = new BABYLON.GUI.TextBlock();
+      label.text = enteredCode[i].toString();
+      label.color = colors[i];
+      label.fontSize = 40;
+      stackPanel.addControl(label);
+  
+      let buttonUp = BABYLON.GUI.Button.CreateSimpleButton("up" + i, "▲");
+      buttonUp.width = "80px";
+      buttonUp.height = "40px";
+      buttonUp.onPointerClickObservable.add(() => {
+          enteredCode[i] = (enteredCode[i] + 1) % 10;
+          label.text = enteredCode[i].toString();
+      });
+      stackPanel.addControl(buttonUp);
+  
+      let buttonDown = BABYLON.GUI.Button.CreateSimpleButton("down" + i, "▼");
+      buttonDown.width = "80px";
+      buttonDown.height = "40px";
+      buttonDown.onPointerClickObservable.add(() => {
+          enteredCode[i] = (enteredCode[i] - 1 + 10) % 10;
+          label.text = enteredCode[i].toString();
+      });
+      stackPanel.addControl(buttonDown);
+  
+      grid.addControl(stackPanel, 0, i); // Ajout dans la grille, ligne 0, colonne i
+      selectors.push(label);
+  }
+  
+  // Bouton pour valider le code
+  var validateButton = BABYLON.GUI.Button.CreateSimpleButton("validate", "Valider");
+  validateButton.top = "90px"; // Descend le bouton de 20 pixels
+  validateButton.width = "150px";
+  validateButton.height = "50px";
+  validateButton.color = "white";
+  validateButton.background = "green";
+  validateButton.onPointerClickObservable.add(() => {
+      if (JSON.stringify(enteredCode) === JSON.stringify(secretCode)) {
+          showNotification("✔️ Code correct ! Le coffre s'ouvre.", "green");
+          puzzlePanel.isVisible = false;
+          safe.dispose(); // Supprime le coffre
+          BABYLON.SceneLoader.ImportMesh("", "/models/", "antique_iron_safe_open.glb", scene, function (meshes) {
+              let safe = meshes[0]; // Récupérer l'objet principal du modèle
+          
+              safe.position = new BABYLON.Vector3(4, 0.6, 9); // Ajuste en fonction de ta scène
+          
+              // Mise à l'échelle du modèle pour s'assurer qu'il a la bonne taille
+              safe.scaling = new BABYLON.Vector3(1.1, 1.1, 1.1); // Ajuste selon la taille du modèle
+          
+              // Activer les collisions
+              safe.checkCollisions = true;
+          
+              // Créer un matériau émissif pour le bureau
+              let emissiveMaterial = new BABYLON.StandardMaterial("emissiveMat", scene);
+              emissiveMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Couleur bleue douce qui émane du bureau
+              emissiveMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);  // Pas de couleur diffuse, reste noir dans la lumière
+              emissiveMaterial.specularColor = new BABYLON.Color3(0, 0, 0);  // Pas de spéculaire, aucune brillance
+          
+              // Appliquer le matériau émissif à chaque mesh du modèle
+              meshes.forEach((mesh) => {
+                  mesh.material = emissiveMaterial; // Appliquer le matériau à chaque partie du modèle
+                  mesh.isPickable = true; // Empêcher de cliquer sur le modèle
+              });
+          
+              scene.ambientColor = new BABYLON.Color3(0, 0, 0); // Éclairage ambiant sombre pour forcer l'obscurité
+          
+              // Fonction pour vérifier l'intensité de la lumière de la scène
+              function checkLighting() {
+                  // On récupère l'intensité totale des lumières dans la scène (exemple avec une lumière directionnelle)
+                  let lightIntensity = 0;
+                  scene.lights.forEach(light => {
+                      if (light.intensity) {
+                          lightIntensity += light.intensity;
+                      }
+                  });
+          
+                  // Si l'intensité lumineuse est supérieure à un seuil (par exemple 0.5), on cache le bureau
+                  if (lightIntensity > 0.5) {
+                      safe.setEnabled(false);  // Masquer le bureau si la lumière est assez forte
+                      ground2Material.alpha = 0; 
+                      ground2Material.emissiveColor = new BABYLON.Color3(0, 0, 0); // Pas d'émission
+                  } else {
+                      safe.setEnabled(true);
+                      ground2Material.alpha = 1;  // Afficher le bureau si la lumière est faible
+                      ground2Material.emissiveColor = new BABYLON.Color3(1, 0.4, 0.6); // Blanc teinté de rose
+          
+                  }
+              }
+              
+          
+              // Vérification de l'éclairage à chaque frame
+              scene.onBeforeRenderObservable.add(() => {
+                  checkLighting();
+              });
+              
+          });
+  
+          
+      } else {
+          showNotification("❌ Mauvais code ! Réessayez.", "red");
+          puzzlePanel.isVisible = false;
+      }
+  });
+  puzzlePanel.addControl(validateButton);
+  
+  
+  
+  // Intégration dans le clic sur le coffre
+  scene.onPointerDown = function (evt, pickResult) { 
       if (pickResult.hit) {
           console.log(pickResult.pickedMesh.name);
           if (pickResult.pickedMesh.name === "flashlight") collectItem("flashlight");
-          if (pickResult.pickedMesh.name === "Object_2") collectItem("key"); // Détection de la clé
+          if (pickResult.pickedMesh.name === "Object_2") collectItem("key");
+          if (pickResult.pickedMesh.name === "Safe_LP_M_SafeFrontPanel_0") puzzlePanel.isVisible = true;
+          
       }
   };
   
-      
+  
+  // Intégration dans le clic sur le coffre
+  scene.registerBeforeRender(checkLighting);
   
   
   
