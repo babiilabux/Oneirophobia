@@ -12,39 +12,6 @@ import { Sound, AudioEngine } from "@babylonjs/core";
     // Start sound playback ...
 })();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*export async function playSound(scene, soundPath) {
     return new Promise((resolve, reject) => {
         const sound = new Sound(
