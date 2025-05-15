@@ -6,101 +6,91 @@ import { createSafe } from "../objects/safe.js";
 import { createInventory } from "../ui/inventory.js";
 import { initGame } from "../ui/intro.js";
 import { createTableau } from "../objects/tableau.js";
+import { loadBed, loadDesk, loadKey, loadSafe } from "../utils/loaders.js";
+import { checkLighting } from "../utils/lighting.js";
+import { showNotification } from "../utils/helpers.js";
+import { createCamera } from "../core/camera.js";
+import { createLighting } from "../core/lighting.js";
 
-export function createScene1(engine) {
+export async function createScene1(engine, canvas) {
   const scene = new Scene(engine);
 
-  // Lumière
-  const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-  light.intensity = 0;
+  // === Lumière ===
+  const light = createLighting(scene, 0);
 
-  // Caméra
-  const camera = new FreeCamera("FreeCamera", new Vector3(0, 2, 0), scene);
-  camera.setTarget(new Vector3(0, 2.3, 2));
-  camera.speed = 0.1;
-  camera.angularSensibility = 1000;
-  camera.checkCollisions = true;
-  camera.applyGravity = true;
-  camera.ellipsoid = new Vector3(0.5, 1, 0.5);
-  camera.minZ = 0.1;
+  // === Caméra ===
+  const camera = createCamera(scene, canvas);
 
-  // Configuration des contrôles clavier pour ZQSD
-  camera.inputs.attached.keyboard.keysUp.push(90);
-  camera.inputs.attached.keyboard.keysLeft.push(81);
-  camera.inputs.attached.keyboard.keysDown.push(83);
-  camera.inputs.attached.keyboard.keysRight.push(68);
-
-  // Création des objets
-  const flashlight = createFlashlight(scene);
-  const key = createKey(scene);
-  const door = createDoor(scene, camera);
-  const safe = createSafe(scene);
-
-  // Création des tableaux
-  createTableau(scene, new Vector3(-4.9, 2.15, 7.5), new Vector3(0, -Math.PI / 2, 0), "../Textures/tableau1.png");
-  createTableau(scene, new Vector3(-2.9, 2.15, 9.9), new Vector3(0, 0, 0), "../Textures/tableau2.png");
-  createTableau(scene, new Vector3(0, 2.15, 9.9), new Vector3(0, 0, 0), "../Textures/tableau3.png");
-
-  // Création de l'inventaire
-  createInventory(scene);
-
-  // Initialisation du jeu
-  initGame(scene);
-
-  // Sol
-  const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10, subdivisions: 100 }, scene);
+  // === Sol principal ===
+  const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
   const groundMaterial = new PBRMaterial("groundMaterial", scene);
   groundMaterial.albedoTexture = new Texture("../Textures/floor_diffuse.jpg", scene);
-  groundMaterial.albedoTexture.uScale = 3;
-  groundMaterial.albedoTexture.vScale = 3;
+  groundMaterial.bumpTexture = new Texture("../Textures/floor_normal.jpg", scene);
   groundMaterial.roughness = 1;
+  groundMaterial.metallic = 0.1;
   ground.material = groundMaterial;
   ground.checkCollisions = true;
 
-  // Plafond
+  // === Plafond ===
   const ceiling = MeshBuilder.CreateGround("ceiling", { width: 10, height: 10 }, scene);
-  const ceilingMaterial = new StandardMaterial("ceilingMat", scene);
-  ceilingMaterial.diffuseColor = new Color3(0, 0, 0);
+  const ceilingMaterial = new PBRMaterial("ceilingMaterial", scene);
+  ceilingMaterial.albedoColor = new Color3(0, 0, 0); // Noir
   ceiling.material = ceilingMaterial;
   ceiling.position = new Vector3(0, 4, 0);
   ceiling.rotation = new Vector3(Math.PI, 0, 0);
   ceiling.checkCollisions = true;
 
-  // Murs
-  const wallMaterial = new PBRMaterial("wallMat", scene);
+  // === Murs ===
+  const wallMaterial = new PBRMaterial("wallMaterial", scene);
   wallMaterial.albedoTexture = new Texture("../Textures/wall_brick_diffuse.jpg", scene);
   wallMaterial.bumpTexture = new Texture("../Textures/wall_brick_normal.jpg", scene);
-  wallMaterial.metallicTexture = new Texture("../Textures/wall_brick_roughness.jpg", scene);
-  wallMaterial.displacementTexture = new Texture("../Textures/wall_brick_displacement.jpg", scene);
-  wallMaterial.backFaceCulling = false;
+  wallMaterial.roughness = 0.8;
+  wallMaterial.metallic = 0.1;
 
-  const wall1 = MeshBuilder.CreatePlane("wall1", { width: 10, height: 4 }, scene);
-  wall1.material = wallMaterial;
-  wall1.position = new Vector3(0, 2, -5);
-  wall1.rotation = new Vector3(0, Math.PI, 0);
-  wall1.checkCollisions = true;
+  const walls = [
+    { name: "wall1", width: 10, height: 4, position: new Vector3(0, 2, -5), rotation: new Vector3(0, Math.PI, 0) },
+    { name: "wall2", width: 10, height: 4, position: new Vector3(-5, 2, 0), rotation: new Vector3(0, -Math.PI / 2, 0) },
+    { name: "wall3", width: 10, height: 4, position: new Vector3(5, 2, 0), rotation: new Vector3(0, Math.PI / 2, 0) },
+    { name: "wall4", width: 10, height: 4, position: new Vector3(0, 2, 5), rotation: new Vector3(0, 0, 0) },
+  ];
 
-  const wall2 = MeshBuilder.CreatePlane("wall2", { width: 10, height: 4 }, scene);
-  wall2.material = wallMaterial;
-  wall2.position = new Vector3(-5, 2, 0);
-  wall2.rotation = new Vector3(0, -Math.PI / 2, 0);
-  wall2.checkCollisions = true;
+  walls.forEach((wall) => {
+    const mesh = MeshBuilder.CreatePlane(wall.name, { width: wall.width, height: wall.height }, scene);
+    mesh.material = wallMaterial;
+    mesh.position = wall.position;
+    mesh.rotation = wall.rotation;
+    mesh.checkCollisions = true;
+  });
 
-  const wall3 = MeshBuilder.CreatePlane("wall3", { width: 10, height: 4 }, scene);
-  wall3.material = wallMaterial;
-  wall3.position = new Vector3(5, 2, 0);
-  wall3.rotation = new Vector3(0, Math.PI / 2, 0);
-  wall3.checkCollisions = true;
+  // === Objets interactifs ===
+  await loadBed(scene); // Lit
+  await loadDesk(scene); // Bureau
+  await loadKey(scene); // Clé
+  await loadSafe(scene); // Coffre
 
-  const wall4Left = MeshBuilder.CreateBox("wall4Left", { width: 4.3, height: 4, depth: 0.2 }, scene);
-  wall4Left.material = wallMaterial;
-  wall4Left.position = new Vector3(-2.85, 2, 5);
-  wall4Left.checkCollisions = true;
+  // === Lampe torche ===
+  createFlashlight(scene, camera);
 
-  const wall4Right = MeshBuilder.CreateBox("wall4Right", { width: 4.3, height: 4, depth: 0.2 }, scene);
-  wall4Right.material = wallMaterial;
-  wall4Right.position = new Vector3(2.85, 2, 5);
-  wall4Right.checkCollisions = true;
+  // === Porte ===
+  createDoor(scene, camera);
+
+  // === Tableaux ===
+  createTableau(scene, new Vector3(-4.9, 2.15, 7.5), new Vector3(0, -Math.PI / 2, 0), "../Textures/tableau1.png");
+  createTableau(scene, new Vector3(-2.9, 2.15, 9.9), new Vector3(0, 0, 0), "../Textures/tableau2.png");
+  createTableau(scene, new Vector3(0, 2.15, 9.9), new Vector3(0, 0, 0), "../Textures/tableau3.png");
+
+  // === Vérification de l'éclairage ===
+  checkLighting(scene, 0.5, () => {
+    showNotification(scene, "Lumière faible : objets cachés révélés.", "yellow");
+  }, () => {
+    showNotification(scene, "Lumière forte : objets cachés masqués.", "blue");
+  });
+
+  // Création de l'inventaire
+  createInventory(scene);
+
+  // Initialisation du jeu
+  initGame(scene, camera);
 
   return scene;
 }

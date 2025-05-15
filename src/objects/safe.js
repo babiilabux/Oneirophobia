@@ -1,24 +1,18 @@
-import { SceneLoader, StandardMaterial, Color3, Vector3 } from "@babylonjs/core";
-import "@babylonjs/loaders/glTF";
+import { SceneLoader, Vector3, StandardMaterial, Color3 } from "@babylonjs/core";
 
-export function createSafe(scene) {
-  let safe = null;
-  SceneLoader.ImportMesh("", "/models/", "antique_iron_safe.glb", scene, function (meshes) {
-    safe = meshes[0];
-    safe.position = new Vector3(4, 0.6, 9);
-    safe.scaling = new Vector3(1.1, 1.1, 1.1);
-    safe.checkCollisions = true;
+export async function createSafe(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "antique_iron_safe.glb", scene);
+  const safe = result.meshes[0];
 
-    let emissiveMaterial = new StandardMaterial("emissiveMat", scene);
-    emissiveMaterial.emissiveColor = new Color3(0.85, 0.73, 0.83);
-    emissiveMaterial.diffuseColor = new Color3(0, 0, 0);
-    emissiveMaterial.specularColor = new Color3(0, 0, 0);
+  safe.position = new Vector3(4, 0.6, 9);
+  safe.scaling = new Vector3(1.1, 1.1, 1.1);
 
-    meshes.forEach((mesh) => {
-      mesh.material = emissiveMaterial;
-      mesh.isPickable = true;
-    });
-  });
+  // Matériau émissif
+  const emissiveMaterial = new StandardMaterial("safeMat", scene);
+  emissiveMaterial.emissiveColor = new Color3(0.85, 0.73, 0.83);
+  safe.material = emissiveMaterial;
+
+  safe.checkCollisions = true;
 
   return safe;
 }

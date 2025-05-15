@@ -9,32 +9,42 @@ import {
   Color3,
   Texture,
   PBRMaterial,
-  SceneLoader,
-  CreateSoundAsync
+  SceneLoader
 } from "@babylonjs/core";
 import "@babylonjs/loaders/glTF";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control, Slider } from "@babylonjs/gui/2D";
-import { createEngine } from "./core/engine.js";
-import { createCamera } from "./core/camera";
-import { createLighting } from "./core/lighting.js";
-import { playAmbientSound } from "./core/sounds.js";
+import { createEngine } from "./core/engine";
 
+// Création engine
+const engine = createEngine();
 
-// Engine + Canvas
-const { engine, canvas } = createEngine(); // Crée l'engine et le canvas
 
 // Création de la scène
 const scene = new Scene(engine);
 scene.collisionsEnabled = true;
-
 // Lumière
-const light = createLighting(scene, 0); 
+const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+light.intensity = 0;
 
-// Caméra
-const camera = createCamera(scene, canvas);
 
-// === Intro ===
+// Création de la caméra
+const camera = new FreeCamera("FreeCamera", new Vector3(0, 2, 0), scene);
+camera.setTarget(new BABYLON.Vector3(0, 2.3, 2)); 
+camera.speed = 0.1;
+camera.angularSensibility = 1000;
+camera.checkCollisions = true;  // Vérifie les collisions
+camera.applyGravity = true;
+camera.ellipsoid = new Vector3(0.5, 1, 0.5); // Collisions avec les murs
+camera.minZ = 0.1;  // Vue des objets proches
+
+
+// Configurer le contrôle clavier pour ZQSD
+camera.inputs.attached.keyboard.keysUp.push(90);    // Z : Déplacement vers le haut (avant)
+camera.inputs.attached.keyboard.keysLeft.push(81);  // Q : Déplacement vers la gauche
+camera.inputs.attached.keyboard.keysDown.push(83);  // S : Déplacement vers le bas (arrière)
+camera.inputs.attached.keyboard.keysRight.push(68); // D : Déplacement vers la droite
+
 const introText = [
     "Appuie sur espace",
     "Ugh... que se passe-t-il ?",
@@ -56,9 +66,6 @@ const introText = [
     "*Interragit avec espace*",
 ];
 
-
-
-
 let canAdvanceText = true;
 let currentTextIndex = 0;
 let textBlock = null;
@@ -74,7 +81,8 @@ flashlightMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Lam
 
 
 
-// === Inventaire ===
+// Interface de l'inventaire
+// Interface améliorée de l'inventaire
 const introTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("IntroUI", true, scene);
 const uiTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene); // Pour l'inventaire
 const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
@@ -232,27 +240,41 @@ window.addEventListener("keydown", (event) => {
     if (event.code === "Space" && flashlightOn) {
         flashlightOn = false;
 
+        // 1. Fermer les yeux (écran noir)
         animateOverlay(1, 10000, () => {
-            if (spotlight) spotlight.intensity = 0;
-            if (lampe) lampe.setEnabled(false);
 
+            // 2. Éteindre la torche pendant que l'écran est noir
+            if (equippedItem && equippedItem.spotlight) {
+                equippedItem.spotlight.intensity = 0;
+                 lampe.setEnabled(false);
+            }
+
+            // 3. Ouvrir les yeux (retirer le noir => on voit le monde des rêves)
             animateOverlay(0, 10000);
+            
         });
     }
 });
 
 window.addEventListener("keyup", (event) => {
     if (event.code === "Space" && !flashlightOn) {
+        // 1. Fermer les yeux
         animateOverlay(1, 10000, () => {
+
+            // 2. Rallumer la torche
             flashlightOn = true;
+            if (equippedItem && equippedItem.spotlight) {
+                equippedItem.spotlight.intensity = 100;
+                 lampe.setEnabled(true);
+            }
 
-            if (spotlight) spotlight.intensity = 50; // Remettre l’intensité souhaitée
-            if (lampe) lampe.setEnabled(true);
-
+            // 3. Ouvrir les yeux
             animateOverlay(0, 10000);
         });
     }
 });
+
+
 
 
 
@@ -354,6 +376,12 @@ function skipIntro() {
 }
 
 
+
+
+
+
+
+// Démarrer le jeu et masquer l'interface d'introduction
 // Démarrer le jeu et masquer l'interface d'introduction
 function startGame() {
     // Masquer l'interface du texte d'introduction (en supprimant le panneau entier)
@@ -364,12 +392,21 @@ function startGame() {
         textBlock.dispose(); // Supprimer le texte
     }
 
+    // Créer la lampe torche après la fin de l'introduction
+    createFlashlight();  // Crée la lampe torche à la fin de l'intro
+
+    // Rendre la lampe torche visible après la fin du texte
+    flashlight.setEnabled(true);  // Rendre visible la lampe torche
     camera.attachControl(canvas, true);  // Permet à la caméra de suivre la souris sans clic
 
     // Permettre au joueur de commencer à jouer
     canPlay = true;
     
 }
+
+
+
+
 
 showIntroText();
 
@@ -379,6 +416,14 @@ scene.onKeyboardObservable.add((keyboardInfo) => {
         nextIntroText();
     }
 });
+
+// Créer la lampe torche
+function createFlashlight() {
+    flashlight = BABYLON.MeshBuilder.CreateCylinder("flashlight", { height: 0.3, diameter: 0.1 }, scene);
+    flashlight.material = flashlightMaterial;
+    flashlight.position = new BABYLON.Vector3(0, 2, 2); // Position de la lampe torche
+    flashlight.setEnabled(false);  // Assurez-vous qu'il n'est pas visible immédiatement
+}
 
 // Écouter la pression de la barre d'espace pour passer au texte suivant
 function handleSpacebarEvent() {
@@ -908,60 +953,27 @@ loadBed();
 
 let lampe = null; // Globalement accessible
 
-
-
-let spotlight = null;
-
-
-// === Charger la lampe et la lumière ===
 async function loadLampe() {
     try {
         const result = await SceneLoader.ImportMeshAsync("", "/models/", "lantern.glb", scene);
         if (result.meshes && result.meshes.length > 0) {
             lampe = result.meshes[0];
 
-            lampe.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
+            lampe.scaling = new Vector3(0.001, 0.001, 0.001);
             lampe.parent = camera;
             lampe.position = new BABYLON.Vector3(-0.15, -0.15, 0.4);
             lampe.rotation = new BABYLON.Vector3(0, 0, 0);
             lampe.checkCollisions = true;
-            lampe.setEnabled(true);
 
-            // Création de la lumière
-            spotlight = new BABYLON.SpotLight(
-                "lanternLight",
-                lampe.getAbsolutePosition(),
-                camera.getDirection(BABYLON.Vector3.Forward()),
-                Math.PI / 3,
-                2,
-                scene
-            );
-
-            spotlight.intensity = 50;
-            spotlight.range = 15;
-            spotlight.falloffType = BABYLON.Light.FALLOFF_LINEAR;
-            spotlight.diffuse = new BABYLON.Color3(1.0, 0.78, 0.4);
-            spotlight.specular = new BABYLON.Color3(0.8, 0.6, 0.3);
-
-            // Mettre à jour position/direction à chaque frame
-            scene.onBeforeRenderObservable.add(() => {
-                if (lampe && spotlight) {
-                    spotlight.position = lampe.getAbsolutePosition();
-                    spotlight.direction = camera.getDirection(BABYLON.Vector3.Forward());
-                }
-            });
-
-            console.log("Lampe torche et lumière chargées !");
+            console.log("Lampe torche chargée !");
         } else {
-            console.error("Erreur : Aucun mesh trouvé dans le modèle.");
+            console.error("Erreur : Aucun modèle GLB chargé.");
         }
     } catch (error) {
-        console.error("Erreur lors du chargement de la lampe torche :", error);
+        console.error("Erreur lors du chargement du modèle GLB :", error);
     }
 }
-
-loadLampe();
-
+ loadLampe();
 
  // Masquer la lampe au début
 
@@ -1313,7 +1325,7 @@ function equipItem(item) {
                 let keyHand = meshes[0]; // Récupère le modèle de la clé (premier mesh)                
                 // Positionne la clé dans la main droite du personnage
                 keyHand.parent = camera;
-                keyHand.position = new BABYLON.Vector3(0.22, -0.05, 0.4); // On va ajuster cette position plus bas
+                keyHand.position = new BABYLON.Vector3(0.11, 0, 0.4); // On va ajuster cette position plus bas
                 keyHand.scaling = new BABYLON.Vector3(0.0003, 0.0003, 0.0003); // Ajuste l'échelle pour que la clé soit à la bonne taille
                 let emissiveMaterial = new BABYLON.StandardMaterial("emissiveMat", scene);
                 emissiveMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Couleur bleue douce qui émane du bureau
@@ -1329,6 +1341,75 @@ function equipItem(item) {
                 
 
             });
+            break;
+        
+            case "flashlight": // Équipement de la lanterne
+            
+            async function loadLampeTorche() {
+    try {
+        const result = await BABYLON.SceneLoader.ImportMeshAsync("", "/models/", "lampetorche.glb", scene);
+        
+        if (result.meshes && result.meshes.length > 0) {
+            equippedItem = result.meshes[0];
+
+            // Positionner, échelle, rotation
+            equippedItem.scaling = new BABYLON.Vector3(0.000025, 0.000025, 0.000025);
+            equippedItem.parent = camera;
+            equippedItem.position = new BABYLON.Vector3(-0.15, -0.15, 0.4);
+            equippedItem.rotation = new BABYLON.Vector3(0, 0, 0);
+
+            // Création du spotlight
+            const spotlight = new BABYLON.SpotLight(
+                "spotlight",
+                camera.position,
+                camera.getDirection(BABYLON.Vector3.Forward()),
+                Math.PI / 3,
+                2,
+                scene
+            );
+
+            // Ajuster l'intensité de la lumière (peut-être trop forte à 100)
+            spotlight.intensity = 50; // Diminuer l'intensité si c'est trop fort
+
+            // Ajuster la couleur de la lumière pour la rendre plus chaude (par exemple, jaune)
+
+            spotlight.range = 15; // Réduire la portée de la lumière
+            spotlight.falloffType = BABYLON.Light.FALLOFF_LINEAR; // Atténuation linéaire pour une lumière plus concentrée
+            spotlight.angle = Math.PI / 3;
+            spotlight.position = camera.position.add(camera.getDirection(BABYLON.Vector3.Forward()).scale(0.5));
+            spotlight.diffuse = new BABYLON.Color3(1.0, 0.78, 0.4); // Jaune-orangée chaude
+            spotlight.specular = new BABYLON.Color3(0.8, 0.6, 0.3);
+
+
+
+            equippedItem.spotlight = spotlight;
+
+            // Mise à jour continue de la position et direction de la lumière
+            scene.onBeforeRenderObservable.add(() => {
+                spotlight.position = camera.position.add(camera.getDirection(BABYLON.Vector3.Forward()).scale(0.5));
+                spotlight.direction = camera.getDirection(BABYLON.Vector3.Forward());
+            });
+
+            // Ombres douces (si elles sont nécessaires)
+            const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotlight);
+            shadowGenerator.usePoissonSampling = true;
+            shadowGenerator.setDarkness(0.4);
+            shadowGenerator.bias = 0.02;
+
+            console.log("Lampe torche chargée et prête avec une lumière jaune !");
+        } else {
+            console.error("Aucun mesh trouvé dans le modèle.");
+        }
+    } catch (error) {
+        console.error("Erreur lors de l'import de la lampe torche :", error);
+    }
+}
+
+// Appelle cette fonction au moment où tu veux équiper la lampe
+loadLampeTorche();
+
+
+        
             break;
         
     }

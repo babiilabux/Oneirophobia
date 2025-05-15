@@ -1,9 +1,9 @@
-import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "@babylonjs/gui/2D";
+import { AdvancedDynamicTexture, Rectangle, StackPanel, TextBlock, Button, Control } from "@babylonjs/gui/2D";
 
 export function createInventory(scene) {
-  const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+  const uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
 
-  const inventoryPanel = new StackPanel();
+  const inventoryPanel = new Rectangle();
   inventoryPanel.width = "300px";
   inventoryPanel.height = "100%";
   inventoryPanel.thickness = 0;
@@ -11,7 +11,7 @@ export function createInventory(scene) {
   inventoryPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   inventoryPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
   inventoryPanel.isVisible = false;
-  advancedTexture.addControl(inventoryPanel);
+  uiTexture.addControl(inventoryPanel);
 
   const inventoryLayout = new StackPanel();
   inventoryLayout.width = "100%";
@@ -41,5 +41,19 @@ export function createInventory(scene) {
   titleText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
   inventoryLayout.addControl(titleText);
 
-  return inventoryPanel;
+  const itemList = new StackPanel();
+  itemList.height = "200px";
+  itemList.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+  inventoryLayout.addControl(itemList);
+
+  const itemDescription = new TextBlock();
+  itemDescription.text = "Sélectionnez un objet pour voir sa description";
+  itemDescription.color = "white";
+  itemDescription.fontSize = 16;
+  itemDescription.textWrapping = true;
+  itemDescription.height = "80px";
+  itemDescription.paddingTop = "10px";
+  inventoryLayout.addControl(itemDescription);
+
+  return { inventoryPanel, itemList, itemDescription };
 }

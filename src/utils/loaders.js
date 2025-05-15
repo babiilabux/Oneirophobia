@@ -1,15 +1,13 @@
-import { SceneLoader } from "@babylonjs/core";
+import { SceneLoader, Vector3 } from "@babylonjs/core";
 
-export function loadBed(scene) {
-  SceneLoader.ImportMeshAsync("", "/models/", "bed_agape.glb", scene).then((result) => {
-    if (result.meshes && result.meshes.length > 0) {
-      let bed = result.meshes[0];
-      bed.position = new Vector3(-3.2, 0, -3.7);
-      bed.scaling = new Vector3(0.015, 0.015, 0.015);
-      bed.rotation.y = Math.PI / 2;
-      bed.checkCollisions = true;
-    }
-  });
+export async function loadBed(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "bed_agape.glb", scene);
+  const bed = result.meshes[0];
+  bed.position = new Vector3(-3.2, 0, -3.7);
+  bed.scaling = new Vector3(0.015, 0.015, 0.015);
+  bed.rotation.y = Math.PI / 2;
+  bed.checkCollisions = true;
+  return bed;
 }
 
 export function loadBook(scene) {
@@ -22,15 +20,13 @@ export function loadBook(scene) {
   });
 }
 
-export function loadDesk(scene) {
-  SceneLoader.ImportMeshAsync("", "/models/", "desk.glb", scene).then((result) => {
-    if (result.meshes && result.meshes.length > 0) {
-      let desk = result.meshes[0];
-      desk.position = new Vector3(4, 0, 4.25);
-      desk.scaling = new Vector3(1.25, 1.25, 1.25);
-      desk.checkCollisions = true;
-    }
-  });
+export async function loadDesk(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "desk.glb", scene);
+  const desk = result.meshes[0];
+  desk.position = new Vector3(4, 0, 4.25);
+  desk.scaling = new Vector3(1.25, 1.25, 1.25);
+  desk.checkCollisions = true;
+  return desk;
 }
 
 export function loadCommonTableAndChair(scene) {
@@ -42,4 +38,23 @@ export function loadCommonTableAndChair(scene) {
       common_table_and_chair.checkCollisions = true;
     }
   });
+}
+
+export async function loadKey(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "key.glb", scene);
+  const key = result.meshes[0];
+  key.position = new Vector3(2, 1.05, -2);
+  key.scaling = new Vector3(0.001, 0.001, 0.001);
+  key.rotation.x = Math.PI / 2;
+  key.checkCollisions = true;
+  return key;
+}
+
+export async function loadSafe(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "antique_iron_safe.glb", scene);
+  const safe = result.meshes[0];
+  safe.position = new Vector3(4, 0.6, 9);
+  safe.scaling = new Vector3(1.1, 1.1, 1.1);
+  safe.checkCollisions = true;
+  return safe;
 }

@@ -1,4 +1,4 @@
-import { AdvancedDynamicTexture, StackPanel, TextBlock, Button } from "@babylonjs/gui/2D";
+import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Rectangle, Animation } from "@babylonjs/gui/2D";
 
 const introText = [
   "Appuie sur espace",
@@ -107,4 +107,37 @@ export function initGame(scene) {
       nextIntroText();
     }
   });
+}
+
+export function createNotificationSystem(scene) {
+  const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+
+  const notificationPanel = new Rectangle();
+  notificationPanel.width = "40%";
+  notificationPanel.height = "10%";
+  notificationPanel.cornerRadius = 10;
+  notificationPanel.color = "White";
+  notificationPanel.thickness = 3;
+  notificationPanel.background = "black";
+  notificationPanel.isVisible = false;
+  notificationPanel.top = "-30%";
+  advancedTexture.addControl(notificationPanel);
+
+  const notificationText = new TextBlock();
+  notificationText.text = "";
+  notificationText.color = "white";
+  notificationText.fontSize = 24;
+  notificationPanel.addControl(notificationText);
+
+  function showNotification(message, color) {
+    notificationText.text = message;
+    notificationText.color = color;
+    notificationPanel.isVisible = true;
+
+    setTimeout(() => {
+      notificationPanel.isVisible = false;
+    }, 3000);
+  }
+
+  return { showNotification };
 }

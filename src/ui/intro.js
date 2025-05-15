@@ -1,4 +1,24 @@
-import { AdvancedDynamicTexture, StackPanel, TextBlock, Button } from "@babylonjs/gui/2D";
+import { SceneLoader, Vector3 } from "@babylonjs/core";
+import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Rectangle, Control } from "@babylonjs/gui/2D";
+
+export async function loadBed(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "bed_agape.glb", scene);
+  const bed = result.meshes[0];
+  bed.position = new Vector3(-3.2, 0, -3.7);
+  bed.scaling = new Vector3(0.015, 0.015, 0.015);
+  bed.rotation.y = Math.PI / 2;
+  bed.checkCollisions = true;
+  return bed;
+}
+
+export async function loadDesk(scene) {
+  const result = await SceneLoader.ImportMeshAsync("", "/models/", "desk.glb", scene);
+  const desk = result.meshes[0];
+  desk.position = new Vector3(4, 0, 4.25);
+  desk.scaling = new Vector3(1.25, 1.25, 1.25);
+  desk.checkCollisions = true;
+  return desk;
+}
 
 const introText = [
   "Appuie sur espace",
@@ -24,87 +44,87 @@ const introText = [
 let canAdvanceText = true;
 let currentTextIndex = 0;
 let textBlock = null;
-let canPlay = false;
+let advancedTexture = null;
+let introPanel = null;
 
-export function showIntroText(scene) {
-  const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-  const introPanel = new StackPanel();
-  advancedTexture.addControl(introPanel);
+export function showIntro(scene, onIntroEnd) {
+  advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("IntroUI", true, scene);
+
+  introPanel = new StackPanel();
   introPanel.width = "600px";
   introPanel.height = "150px";
-  introPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-  introPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+  introPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  introPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+  advancedTexture.addControl(introPanel);
 
-  const background = new BABYLON.GUI.Rectangle();
+  const background = new Rectangle();
   background.width = "100%";
   background.height = "100%";
   background.background = "rgba(0, 0, 0, 1)";
   introPanel.addControl(background);
 
-  textBlock = new BABYLON.GUI.TextBlock();
+  textBlock = new TextBlock();
   textBlock.text = introText[currentTextIndex];
   textBlock.fontSize = 24;
   textBlock.color = "white";
-  textBlock.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-  textBlock.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+  textBlock.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+  textBlock.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
   introPanel.addControl(textBlock);
 
-  const skipButton = BABYLON.GUI.Button.CreateSimpleButton("skipBtn", "SKIP");
+  const skipButton = Button.CreateSimpleButton("skipBtn", "SKIP");
   skipButton.width = "100px";
   skipButton.height = "40px";
   skipButton.color = "white";
   skipButton.background = "red";
-  skipButton.top = "10px";
   skipButton.onPointerUpObservable.add(() => {
-    skipIntro();
+    endIntro(onIntroEnd);
   });
   introPanel.addControl(skipButton);
+
+  scene.onKeyboardObservable.add((keyboardInfo) => {
+    if (keyboardInfo.event.code === "Space" && canAdvanceText) {
+      nextIntroText(onIntroEnd);
+    }
+  });
 }
 
-function nextIntroText() {
+function nextIntroText(onIntroEnd) {
   if (!canAdvanceText) return;
 
   canAdvanceText = false;
   setTimeout(() => {
     canAdvanceText = true;
-  }, 1000);
+  }, 300);
 
   currentTextIndex++;
   if (currentTextIndex < introText.length) {
     textBlock.text = introText[currentTextIndex];
-
-    if (introText[currentTextIndex].includes("*")) {
-      textBlock.color = "white";
-      textBlock.fontStyle = "bold italic";
-    } else if (introText[currentTextIndex].includes("Inconnu")) {
-      textBlock.color = "purple";
-      textBlock.fontStyle = "italic";
-    } else {
-      textBlock.color = "white";
-      textBlock.fontStyle = "normal";
-    }
   } else {
-    setTimeout(() => {
-      startGame();
-    }, 300);
+    endIntro(onIntroEnd);
   }
 }
 
-function skipIntro() {
-  currentTextIndex = introText.length;
-  nextIntroText();
+function endIntro(onIntroEnd) {
+  if (introPanel) {
+    introPanel.dispose();
+    advancedTexture.dispose();
+  }
+  onIntroEnd();
 }
 
-function startGame() {
-  // Masquer l'interface du texte d'introduction
-  // ...
-}
 
-export function initGame(scene) {
-  showIntroText(scene);
-  scene.onKeyboardObservable.add((keyboardInfo) => {
-    if (keyboardInfo.event.code === "Space" && canAdvanceText) {
-      nextIntroText();
-    }
+export function initGame(scene, camera) {
+  // Désactiver les contrôles de la caméra pendant l'intro
+  camera.detachControl();
+
+  // Lancer l'intro
+  showIntro(scene, () => {
+    console.log("Introduction terminée. Le jeu commence !");
+    
+    // Réactiver les contrôles de la caméra
+    camera.attachControl();
+
+    // Afficher une notification pour guider le joueur
+    console.log("Utilisez les touches ZQSD pour vous déplacer et la souris pour regarder autour de vous.");
   });
 }
