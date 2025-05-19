@@ -1,8 +1,5 @@
-import { 
-  Engine, 
+import {  
   Scene, 
-  FreeCamera, 
-  HemisphericLight, 
   Vector3, 
   MeshBuilder, 
   StandardMaterial, 
@@ -20,6 +17,7 @@ import { showIntroText, nextIntroText, skipIntro } from "../ui/intro.js";
 import { canPlay, canAdvanceText, introText, currentTextIndex } from "../ui/intro.js";
 import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Rectangle, Control, Grid } from "@babylonjs/gui/2D";
 
+
 export function setupScene1(engine, canvas, goToScene2) {
   // Création de la scène
 const scene = new Scene(engine);
@@ -28,7 +26,7 @@ scene.collisionsEnabled = true;
 const light = createLighting(scene, 0);
 
 
-// Création de la caméradd
+// Création de la caméras
 const camera = createCamera(scene, canvas);
 
 let flashlight = null;  // Référence globale à la lampe torche
@@ -256,79 +254,6 @@ function initGame() {
 
 initGame();
 
-
-
-
-// (async () => {
-//     const audioEngine = await BABYLON.CreateAudioEngineAsync();
-  
-//     // Create sounds here, but don't call `play()` on them, yet ...
-  
-//     // Wait until audio engine is ready to play sounds.
-//     await audioEngine.unlock();
-  
-//     // Start sound playback ...
-//   })();
-  
-//   const audioEngine = await BABYLON.CreateAudioEngineAsync();
-  
-//   const ambient = await BABYLON.CreateSoundAsync("ambient",
-//     "/sounds/sinnesloschen-beam-117362.mp3"
-//   );
-  
-//   // Set the sound to loop
-//   ambient.loop = true;
-  
-//   // Wait until audio engine is ready to play sounds.
-//   await audioEngine.unlock();
-  
-//   // Start playing the sound
-//   ambient.play();
-  
-
-// function createMenu() {
-//     // Création du panneau d'interface
-//     const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-//     const menuPanel = new StackPanel();
-//     advancedTexture.addControl(menuPanel);
-//     menuPanel.width = "300px";
-//     menuPanel.height = "200px";
-//     menuPanel.top = "150px";
-//     menuPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-//     menuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-  
-//     // Titre du menu
-//     const title = new TextBlock();
-//     title.text = "ONEIROPHOBIA";
-//     title.fontSize = 24;
-//     title.color = "white";
-//     menuPanel.addControl(title);
-  
-//     // Bouton "Démarrer"
-//     const startButton = Button.CreateSimpleButton("startButton", "Démarrer");
-//     startButton.width = "200px";
-//     startButton.height = "40px";
-//     startButton.color = "white";
-//     startButton.background = "green";
-//     startButton.onPointerDownObservable.add(() => {
-//       startGame();
-//       advancedTexture.dispose();  // Masque le menu
-//     });
-//     menuPanel.addControl(startButton);
-  
-//     // Ajouter d'autres boutons ou options au menu si nécessaire
-//   }
-  
-//   // Fonction pour démarrer le jeu
-//   function startGame() {
-//     // Afficher la scène du jeu
-//     scene.activeCamera = camera;  // Activer la caméra
-//     engine.runRenderLoop(() => scene.render());  // Lancer la boucle de rendu
-//   }
-  
-//   // Appel de la fonction pour créer le menu au démarrage
-//   createMenu();
-
   
 // Sol 1
 const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10, subdivisions: 100 }, scene);
@@ -353,10 +278,6 @@ groundMaterial.displacementBias = 0;
 
 ground.material = groundMaterial;
 ground.checkCollisions = true;
-
-// Toit
-
-
 
 // Sol 2
 const ground2 = MeshBuilder.CreateGround("ground2", { width: 10, height: 10, subdivisions: 100 }, scene);
@@ -385,9 +306,6 @@ ground2Material.displacementBias = 0;
 
 ground2.material = ground2Material;
 ground2.checkCollisions = true;
-
-
-
 
 
 const ceiling = MeshBuilder.CreateGround("ceiling", { width: 10, height: 10 }, scene);
@@ -1829,8 +1747,8 @@ validateButton.onPointerClickObservable.add(() => {
 });
 puzzlePanel.addControl(validateButton);
 
-
-
+let loadingScreenDisplayed = false;
+let loadingInProgress = false; // nouvelle variable
 let levierDebAnimationGroup = null;
 // Intégration dans le clic sur le coffre
 scene.onPointerDown = function (evt, pickResult) { 
@@ -1884,20 +1802,107 @@ scene.onPointerDown = function (evt, pickResult) {
         console.log(tableau3.rotation.z); 
     }
     if (pickResult.pickedMesh.name === "wall7" && levierEntierPret === true && verifierOrientations() ) {
-        levierDebAnimationGroup.play(false); // false
-        
-        //Ecran de chargement
-        async function goToSceneAfterDelay() {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Attente 
-            goToScene2(); // Changement de scène après 1 seconde
-            //Insérer code écran de chargement
-        }
-        goToSceneAfterDelay();
+         levierDebAnimationGroup.play(false); // Jouer levier
+if (loadingInProgress) return; // si déjà en train de charger, ne rien faire
+        loadingInProgress = true;
 
-    }
+        levierDebAnimationGroup.play(false);
+        goToScene2();
+        setTimeout(() => {
+            if (loadingScreenDisplayed) return;
+            goToScene2();
+            loadingScreenDisplayed = true;
+
+            const loadingDiv = document.createElement("div");
+            loadingDiv.id = "loadingScreen";
+            loadingDiv.style.position = "absolute";
+            loadingDiv.style.top = "0";
+            loadingDiv.style.left = "0";
+            loadingDiv.style.width = "100%";
+            loadingDiv.style.height = "100%";
+            loadingDiv.style.backgroundColor = "#000";
+            loadingDiv.style.display = "flex";
+            loadingDiv.style.alignItems = "center";
+            loadingDiv.style.justifyContent = "center";
+            loadingDiv.style.zIndex = "9999";
+
+            const loadingImage = document.createElement("img");
+            loadingImage.src = "../../Textures/chargement1.jpg";
+            loadingImage.style.maxWidth = "100%";
+            loadingImage.style.maxHeight = "100%";
+
+            loadingDiv.appendChild(loadingImage);
+            document.body.appendChild(loadingDiv);
+
+            
+
+            setTimeout(() => {
+                loadingDiv.remove();
+                loadingInProgress = false;  // fin du chargement, on peut réactiver
+                // NOTE : Ne remet pas loadingScreenDisplayed à false si tu veux que ça soit unique
+            }, 3000);
+        }, 3000);
+
+}
 };
 
+// Fonction pour afficher l'écran d'accueil
+function showAccueil(scene, onStart) {
+    const accueilUI = AdvancedDynamicTexture.CreateFullscreenUI("AccueilUI", true, scene);
 
+    // Fond noir semi-transparent
+    accueilUI.rootContainer.background = "#000000";
+
+    // Panneau centré
+    const panel = new StackPanel();
+    panel.width = "500px";
+    panel.height = "350px";
+    panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+    accueilUI.addControl(panel);
+
+    // Titre du jeu
+    const title = new TextBlock();
+    title.text = "ONEIROPHOBIA";
+    title.fontSize = 60;
+    title.color = "white";
+    title.height = "120px";
+    title.paddingBottom = "40px";
+    title.fontStyle = "bold";
+    panel.addControl(title);
+
+    // Bouton "Démarrer"
+    const startButton = Button.CreateSimpleButton("startButton", "Démarrer");
+    startButton.width = "220px";
+    startButton.height = "70px";
+    startButton.color = "#7a2e1b";
+    startButton.background = "#b39ddb";
+    startButton.fontSize = 28;
+    startButton.cornerRadius = 20;
+    startButton.thickness = 6;
+    startButton.borderColor = "#7a2e1b";
+    startButton.paddingTop = "20px";
+    startButton.onPointerUpObservable.add(() => {
+        accueilUI.dispose(); // Supprime l'écran d'accueil
+        if (onStart) onStart();
+    });
+    panel.addControl(startButton);
+
+    // Sous-titre
+    const subtitle = new TextBlock();
+    subtitle.text = "Cliquez sur Démarrer pour jouer";
+    subtitle.fontSize = 22;
+    subtitle.color = "#cccccc";
+    subtitle.height = "60px";
+    subtitle.paddingTop = "30px";
+    panel.addControl(subtitle);
+
+    return accueilUI;
+}
+
+showAccueil(scene, () => {
+    startGame();
+});
 
 // Intégration dans le clic sur le coffre
 scene.registerBeforeRender(checkLighting);
