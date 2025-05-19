@@ -1,34 +1,36 @@
-import * as BABYLON from "@babylonjs/core";
-import * as GUI from "@babylonjs/gui";
-import { AdvancedDynamicTexture } from "@babylonjs/gui";
+import { StackPanel, TextBlock, Button, Rectangle, Control } from "@babylonjs/gui/2D";
 
-let inventory = { flashlight: false, key: false };
+// État de l'inventaire
+let inventory = {
+    flashlight: false,
+    key: false,
+    levier: false
+};
 let equippedItemName = null;
-let equippedItem = null;
-let inventoryPanel, inventoryLayout, itemList, itemDescription, helpButton, titleText;
-let uiTexture = null;
-let camera = null;
-let scene = null;
 
-// Permet d'initialiser l'inventaire et son UI
-export function createInventoryUI(_scene, _camera) {
-    scene = _scene;
-    camera = _camera;
-    uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+// UI Babylon.js
+let inventoryPanel, inventoryLayout, itemList, itemDescription, helpButton, advancedTexture;
 
-    // Panel principal
-    inventoryPanel = new GUI.Rectangle();
+// Initialisation de l'UI de l'inventaire
+export function createInventoryUI(scene) {
+    advancedTexture = advancedTexture || scene.advancedTexture || scene.getEngine().getRenderingCanvas().advancedTexture;
+    if (!advancedTexture) {
+        advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+    }
+
+    // Panneau principal
+    inventoryPanel = new Rectangle();
     inventoryPanel.width = "300px";
     inventoryPanel.height = "100%";
     inventoryPanel.thickness = 0;
     inventoryPanel.background = "rgba(0, 0, 0, 0.8)";
-    inventoryPanel.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    inventoryPanel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    inventoryPanel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+    inventoryPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
     inventoryPanel.isVisible = false;
-    uiTexture.addControl(inventoryPanel);
+    advancedTexture.addControl(inventoryPanel);
 
-    // Layout
-    inventoryLayout = new GUI.StackPanel();
+    // Layout vertical
+    inventoryLayout = new StackPanel();
     inventoryLayout.width = "100%";
     inventoryLayout.height = "100%";
     inventoryLayout.paddingTop = "10px";
@@ -37,35 +39,35 @@ export function createInventoryUI(_scene, _camera) {
     inventoryPanel.addControl(inventoryLayout);
 
     // Bouton de fermeture
-    const closeButton = GUI.Button.CreateSimpleButton("closeBtn", "❌");
+    const closeButton = Button.CreateSimpleButton("closeBtn", "❌");
     closeButton.width = "30px";
     closeButton.height = "30px";
     closeButton.color = "white";
     closeButton.background = "transparent";
-    closeButton.horizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    closeButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
     closeButton.onPointerUpObservable.add(() => {
         inventoryPanel.isVisible = false;
     });
     inventoryLayout.addControl(closeButton);
 
     // Titre
-    titleText = new GUI.TextBlock();
+    const titleText = new TextBlock();
     titleText.text = "Inventaire";
     titleText.height = "40px";
     titleText.color = "white";
     titleText.fontSize = 24;
     titleText.paddingBottom = "10px";
-    titleText.textHorizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    titleText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
     inventoryLayout.addControl(titleText);
 
     // Liste des objets
-    itemList = new GUI.StackPanel();
+    itemList = new StackPanel();
     itemList.height = "200px";
-    itemList.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    itemList.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
     inventoryLayout.addControl(itemList);
 
     // Zone de description
-    itemDescription = new GUI.TextBlock();
+    itemDescription = new TextBlock();
     itemDescription.text = "Sélectionnez un objet pour voir sa description";
     itemDescription.color = "white";
     itemDescription.fontSize = 16;
@@ -74,15 +76,15 @@ export function createInventoryUI(_scene, _camera) {
     itemDescription.paddingTop = "10px";
     inventoryLayout.addControl(itemDescription);
 
-    // Bouton aide
-    helpButton = GUI.Button.CreateSimpleButton("helpBtn", "Afficher les commandes");
+    // Bouton d'aide
+    helpButton = Button.CreateSimpleButton("helpBtn", "Afficher les commandes");
     helpButton.width = "100%";
     helpButton.height = "40px";
     helpButton.color = "white";
     helpButton.background = "#666";
     helpButton.paddingTop = "20px";
     helpButton.onPointerUpObservable.add(() => {
-        alert("Commandes :\n- [1] Équiper lampe\n- [2] Équiper clé\n- [R] Déséquiper\n- [E/I] Inventaire\n- [Esc] Fermer");
+        alert("Commandes :\n- [1] Équiper lampe\n- [2] Équiper clé\n- [3] Équiper levier\n- [R] Déséquiper\n- [E/I] Inventaire\n- [Esc] Fermer");
     });
     inventoryLayout.addControl(helpButton);
 
@@ -96,7 +98,7 @@ export function updateInventoryUI() {
 
     const createItemButton = (id, label, description) => {
         const isEquipped = equippedItemName === id;
-        const btn = GUI.Button.CreateSimpleButton(id + "Btn", label);
+        const btn = Button.CreateSimpleButton(id + "Btn", label);
         btn.width = "100%";
         btn.height = "30px";
         btn.color = "white";
@@ -115,7 +117,10 @@ export function updateInventoryUI() {
     if (inventory.key) {
         createItemButton("key", "Clé", "Clé : Permet d’ouvrir une porte verrouillée.");
     }
-    if (!inventory.flashlight && !inventory.key) {
+    if (inventory.levier) {
+        createItemButton("levier", "Levier", "Un morceau de levier. Peut-être qu'il peut être utilisé quelque part ?");
+    }
+    if (!inventory.flashlight && !inventory.key && !inventory.levier) {
         itemDescription.text = "(Inventaire vide)";
     }
 }
@@ -140,38 +145,47 @@ export function hasItem(item) {
     return !!inventory[item];
 }
 
-// Équipe un objet
+// Équipe un objet (juste l'état, pas le mesh 3D)
 export function equipItem(item) {
     if (!inventory[item]) return;
     if (equippedItemName === item) {
         unequipItem();
-        equippedItemName = null;
-        updateInventoryUI();
         return;
     }
-    unequipItem();
     equippedItemName = item;
-    // Ici tu peux ajouter la logique pour afficher l'objet dans la main du joueur
-    // (ex: charger le mesh, le placer dans la main, etc.)
     updateInventoryUI();
 }
 
 // Déséquipe l'objet
 export function unequipItem() {
     equippedItemName = null;
-    // Ici tu peux ajouter la logique pour retirer l'objet de la main du joueur
     updateInventoryUI();
 }
 
-// Affiche/masque l'inventaire
+// Affiche ou masque l'inventaire
 export function toggleInventory() {
-    if (inventoryPanel) inventoryPanel.isVisible = !inventoryPanel.isVisible;
+    if (inventoryPanel) {
+        inventoryPanel.isVisible = !inventoryPanel.isVisible;
+        updateInventoryUI();
+    }
 }
 
-// Pour accès dans main.js
-export function getEquippedItemName() {
-    return equippedItemName;
-}
-export function getInventory() {
+// Pour accès à l'état de l'inventaire depuis l'extérieur
+export function getInventoryState() {
     return { ...inventory };
+}
+
+/**
+ * Collecte un objet et l’ajoute à l’inventaire si besoin.
+ * @param {string} item - "key", "flashlight", "levier"
+ * @param {object} options - { mesh?: BABYLON.Mesh, onCollect?: function }
+ */
+export function collectItem(item, options = {}) {
+    if (!hasItem(item)) {
+        addItem(item);
+        // La gestion du mesh (disable, hide, etc.) doit se faire dans la scène
+        if (typeof options.onCollect === "function") {
+            options.onCollect();
+        }
+    }
 }

@@ -451,6 +451,7 @@ parchemin.rotation = new Vector3(Math.PI / 2, 0, 0);  // A plat
 parchemin.position = new Vector3(3.6, 1.15, 4);         // Juste au-dessus de la surface de la table
 
 
+
 // === Tableau 1 ===
 const tableau1Material = new PBRMaterial("tableau1Mat", scene);
 tableau1Material.albedoTexture = new Texture("../Textures/tableau1.png", scene);
@@ -548,9 +549,9 @@ tableau3.actionManager.registerAction(
     })
 );
 
-const advancedTextureTab = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+const advancedTextureTab = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
 // === GUI commune pour les tableaux ===
-const tableauLabel = new TextBlock();
+const tableauLabel = new BABYLON.GUI.TextBlock();
 tableauLabel.text = "Cliquer pour tourner";
 tableauLabel.color = "white";
 tableauLabel.fontSize = 24;
@@ -558,43 +559,37 @@ tableauLabel.top = "-40px";
 tableauLabel.isVisible = false;
 advancedTextureTab.addControl(tableauLabel);
 
-function createHoverLabelForMesh(mesh, text, distanceThreshold = 4) {
-    const label = new TextBlock();
-    label.text = text;
-    label.color = "white";
-    label.fontSize = 24;
-    label.top = "-40px";
-    label.isVisible = false;
-    advancedTextureTab.addControl(label);
-    label.linkWithMesh(mesh);
-
-    // Utilise l'actionManager existant ou crée-le s'il n'existe pas
+function createHoverHighlightForMesh(mesh, distanceThreshold = 4) {
     if (!mesh.actionManager) {
         mesh.actionManager = new BABYLON.ActionManager(scene);
     }
+
+    // Active l'outline, couleur et largeur initiale à 0
+    mesh.renderOutline = true;
+    mesh.outlineWidth = 0;
+    mesh.outlineColor = BABYLON.Color3.Black();
 
     mesh.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, function () {
             const distance = BABYLON.Vector3.Distance(mesh.position, camera.position);
             if (distance < distanceThreshold) {
-                label.isVisible = true;
+                mesh.outlineWidth = 0.1; // active l’outline pour surbrillance
             }
         })
     );
 
     mesh.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, function () {
-            label.isVisible = false;
+            mesh.outlineWidth = 0; // désactive l’outline
         })
     );
 }
 
 
 
-    // createHoverLabelForMesh(tableau1, "Cliquer pour tourner");
-    // createHoverLabelForMesh(tableau2, "Cliquer pour tourner");
-    // createHoverLabelForMesh(tableau3, "Cliquer pour tourner");
-
+createHoverHighlightForMesh(tableau1);
+createHoverHighlightForMesh(tableau2);
+createHoverHighlightForMesh(tableau3);
 
 
 const tableauReveMaterial = new BABYLON.StandardMaterial("tableauReveMat", scene);
@@ -625,36 +620,34 @@ tableau3Reve.isPickable = false;
 
 let tableauxValide = false;
 
-function estRotationValide(angleActuel, angleParfait, tolerance = 0.01) {
-    const twoPi = 2 * Math.PI;
-    const diff = angleActuel - angleParfait;
-    const quotient = diff / twoPi;
-    
-    // Vérifier si quotient est proche d'un entier
-    const quotientArrondi = Math.round(quotient);
-    
-    return Math.abs(quotient - quotientArrondi) < tolerance;
+function procheDeLUnDes(valeur, listeValeurs, tolerance = 0.1) {
+    return listeValeurs.some(v => Math.abs(valeur - v) < tolerance);
 }
+
+const valeursTab1 = [0, -Math.PI, -2 * Math.PI, -3 * Math.PI];
+const valeursTab2 = [-1.1780972450961724, -4.319689898685965, -7.461282552275762, -10.602875205865558];
+const valeursTab3 = [-2.748893571891069, -5.890486225480863, -9.03207887907066, -12.173671532660457];
 
 function verifierOrientations() {
     // tolérance pour éviter problèmes avec les flottants (par ex. 0.0001)
-    const tolerance = 0.0001;
+    const tolerance = 0.01;
 
     const compareAngles = (a, b) => Math.abs(a - b) < tolerance;
 
     if (
-        estRotationValide(tableau1.rotation.z, 0) &&
-        estRotationValide(tableau2.rotation.z, -1.1780972450961724) &&
-        estRotationValide(tableau3.rotation.z, -2.748893571891069)
+        procheDeLUnDes(currentRotationtab1, valeursTab1) &&
+        procheDeLUnDes(currentRotationtab2, valeursTab2) &&
+        procheDeLUnDes(currentRotationtab3, valeursTab3)
     ) {
         tableauxValide = true;
+        console.log("Tableaux validés !");
         return true;
+        
     } else {
         tableauxValide = false;
-        console.log(BABYLON.Tools.ToRadians(45))
-        console.log(BABYLON.Tools.ToRadians(90))
-        console.log(BABYLON.Tools.ToRadians(22.5))
+        console.log("Tableaux non validés !");
         return false;
+        
 
     }
 }
@@ -683,6 +676,7 @@ function checkLighting() {
         tableau3Reve.visibility = 1;  // Rendre le tableau visible
     }
 }
+
 
 
 // Mur 3 (droite)
@@ -799,8 +793,8 @@ let doorOpen = false;
 
 
 // Texte de feedback
-const advancedTextureDoor = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-const doorLabel = new TextBlock();
+const advancedTextureDoor = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+const doorLabel = new BABYLON.GUI.TextBlock();
 doorLabel.text = "Porte verrouillée";
 doorLabel.color = "white";
 doorLabel.fontSize = 24;
@@ -809,7 +803,7 @@ doorLabel.isVisible = false;
 advancedTextureDoor.addControl(doorLabel);
 
 // Pour suivre la position de la porte
-const labelLink = new Rectangle();
+const labelLink = new BABYLON.GUI.Rectangle();
 labelLink.isVisible = false;
 advancedTextureDoor.addControl(labelLink);
 doorLabel.linkWithMesh(door);
@@ -823,7 +817,7 @@ door.actionManager.registerAction(
         const distance = BABYLON.Vector3.Distance(door.position, camera.position);
         if (distance < 4) {
             if (equippedItem && equippedItem.name === '__root__') {
-                doorLabel.text = "Cliquer pour déverrouiller";
+                doorLabel.text = " ";
             } else {
                 doorLabel.text = "Porte verrouillée";
             }
@@ -873,6 +867,7 @@ function openDoor() {
     door.animations = [animation];
     scene.beginAnimation(door, 0, 30, false);
 }
+
 
 
 
@@ -1133,7 +1128,7 @@ BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshe
 // Trouve le mesh "principal" pour le label (par exemple le premier mesh qui est pickable et visible)
 const meshForLabel = meshes.find(m => m.isPickable && m.isVisible) || key;
 
-const keyLabel = new TextBlock();
+const keyLabel = new BABYLON.GUI.TextBlock();
 keyLabel.text = "Cliquer pour récupérer";
 keyLabel.color = "white";
 keyLabel.fontSize = 24;
@@ -1143,25 +1138,29 @@ advancedTextureDoor.addControl(keyLabel);
 keyLabel.linkWithMesh(meshForLabel);
 
 // ActionManager sur chaque mesh pour détecter les événements
-meshes.forEach(mesh => {
-    mesh.actionManager = new BABYLON.ActionManager(scene);
+meshes.forEach(mesh => { mesh.actionManager = new BABYLON.ActionManager(scene);
+
+    // Stocke le matériau original
+    const originalMaterial = mesh.material;
 
     mesh.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOverTrigger, function () {
             if (!key.isEnabled()) {
-                keyLabel.isVisible = false; // La clé est prise, ne jamais afficher le label
                 return;
             }
             const distance = BABYLON.Vector3.Distance(mesh.position, camera.position);
             if (distance < 3) {
-                keyLabel.isVisible = true;
+                // Appliquer un matériau de surbrillance (par exemple un matériau émissif)
+                mesh.material = new BABYLON.StandardMaterial("highlightMat", scene);
+                mesh.material.emissiveColor = new BABYLON.Color3(255, 255, 255); // jaune lumineux
             }
         })
     );
 
     mesh.actionManager.registerAction(
         new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnPointerOutTrigger, function () {
-            keyLabel.isVisible = false;
+            // Revenir au matériau original
+            mesh.material = originalMaterial;
         })
     );
 
@@ -1171,8 +1170,7 @@ meshes.forEach(mesh => {
             if (distance < 3) {
                 equippedItem = key;
                 key.setEnabled(false);
-                keyLabel.isVisible = false;    
-                keyLabel.linkWithMesh(null);   // Détache le label du mesh
+                mesh.material = originalMaterial; // Juste pour être sûr
             }
         })
     );
@@ -1181,7 +1179,6 @@ meshes.forEach(mesh => {
 
     
 });
-
 
 let safe=null;
 BABYLON.SceneLoader.ImportMesh("", "/models/", "antique_iron_safe.glb", scene, function (meshes) {
@@ -1574,12 +1571,69 @@ function collectItem(item) {
     }
 }
 
+function createHitbox(name, size, position, showDebug = false, scene) {
+    const hitbox = BABYLON.MeshBuilder.CreateBox(name, {
+        width: size.x,
+        height: size.y,
+        depth: size.z
+    }, scene);
+
+    hitbox.position = new BABYLON.Vector3(position.x, position.y, position.z);
+    hitbox.isPickable = true;
+    hitbox.checkCollisions = true; // 🚫 empêche la caméra de traverser
+
+    if (showDebug) {
+        const debugMaterial = new BABYLON.StandardMaterial(name + "_mat", scene);
+        debugMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
+        debugMaterial.alpha = 0.3;
+        hitbox.material = debugMaterial;
+    } else {
+        hitbox.visibility = 0;
+    }
+
+    return hitbox;
+}
+
+
+const bedHitbox = createHitbox(
+    "triggerZone1",
+    { x: 2.7, y: 3, z: 2.7 },            // Dimensions : largeur, hauteur, profondeur
+    { x: -3.2, y: 0, z: -3.7 },          // Position
+    false,                            // true pour afficher la hitbox
+    scene                            // ta scène Babylon.js
+);
+
+const tableHitbox = createHitbox(
+    "triggerZone1",
+    { x: 2.7, y: 3, z: 3 },            // Dimensions : largeur, hauteur, profondeur
+    { x: 2, y: 0, z: -2 },          // Position
+    false,                            // true pour afficher la hitbox
+    scene                            // ta scène Babylon.js
+);
+
+const deskHitbox = createHitbox(
+    "triggerZone1",
+    { x: 2, y: 3, z: 1.5 },            // Dimensions : largeur, hauteur, profondeur
+    { x: 4, y: 0, z: 4.25 },          // Position
+    false,                            // true pour afficher la hitbox
+    scene                            // ta scène Babylon.js
+);
+
+const armoireHitbox = createHitbox(
+    "triggerZone1",
+    { x: 1.5, y: 3, z: 1.5 },            // Dimensions : largeur, hauteur, profondeur
+    { x: -2.5, y: 0, z: 4.75 },          // Position
+    false,                            // true pour afficher la hitbox
+    scene                            // ta scène Babylon.js
+);
+
+
 
 
 //
 // Importation de l'UI Babylon.js
 // Panneau de notification
-var notificationPanel = new Rectangle();
+var notificationPanel = new BABYLON.GUI.Rectangle();
 notificationPanel.width = "40%";
 notificationPanel.height = "10%";
 notificationPanel.cornerRadius = 10;
@@ -1590,7 +1644,7 @@ notificationPanel.isVisible = false;
 notificationPanel.top = "-30%"; // Position initiale hors écran
 advancedTexture.addControl(notificationPanel);
 
-var notificationText = new TextBlock();
+var notificationText = new BABYLON.GUI.TextBlock();
 notificationText.text = "";
 notificationText.color = "white";
 notificationText.fontSize = 24;
@@ -1633,7 +1687,7 @@ function showNotification(message, color) {
     }, 3000);
 }
 
-var puzzlePanel = new Rectangle();
+var puzzlePanel = new BABYLON.GUI.Rectangle();
 puzzlePanel.width = "50%";
 puzzlePanel.height = "40%";
 puzzlePanel.cornerRadius = 10;
@@ -1644,7 +1698,7 @@ puzzlePanel.isVisible = false;
 advancedTexture.addControl(puzzlePanel);
 
 // Création d'une grille pour aligner les chiffres horizontalement
-var grid = new Grid();
+var grid = new BABYLON.GUI.Grid();
 grid.width = "100%";
 grid.height = "80%";
 
@@ -1667,16 +1721,16 @@ var secretCode = [3, 2, 1, 6];  // Exemple de code secret
 
 
 for (let i = 0; i < 4; i++) {
-    let stackPanel = new StackPanel();
+    let stackPanel = new BABYLON.GUI.StackPanel();
     stackPanel.width = "100%";
 
-    let label = new TextBlock();
+    let label = new BABYLON.GUI.TextBlock();
     label.text = enteredCode[i].toString();
     label.color = colors[i];
     label.fontSize = 40;
     stackPanel.addControl(label);
 
-    let buttonUp = Button.CreateSimpleButton("up" + i, "▲");
+    let buttonUp = BABYLON.GUI.Button.CreateSimpleButton("up" + i, "▲");
     buttonUp.width = "80px";
     buttonUp.height = "40px";
     buttonUp.onPointerClickObservable.add(() => {
@@ -1685,7 +1739,7 @@ for (let i = 0; i < 4; i++) {
     });
     stackPanel.addControl(buttonUp);
 
-    let buttonDown =Button.CreateSimpleButton("down" + i, "▼");
+    let buttonDown = BABYLON.GUI.Button.CreateSimpleButton("down" + i, "▼");
     buttonDown.width = "80px";
     buttonDown.height = "40px";
     buttonDown.onPointerClickObservable.add(() => {
@@ -1699,7 +1753,7 @@ for (let i = 0; i < 4; i++) {
 }
 
 // Bouton pour valider le code
-var validateButton = Button.CreateSimpleButton("validate", "Valider");
+var validateButton = BABYLON.GUI.Button.CreateSimpleButton("validate", "Valider");
 validateButton.top = "90px"; // Descend le bouton de 20 pixels
 validateButton.width = "150px";
 validateButton.height = "50px";
@@ -1707,7 +1761,7 @@ validateButton.color = "white";
 validateButton.background = "green";
 validateButton.onPointerClickObservable.add(() => {
     if (JSON.stringify(enteredCode) === JSON.stringify(secretCode)) {
-        showNotification("✔️ Code correct ! Le coffre s'ouvre.", "green");
+        showNotification("✔️ Vous avez obtenu une partie du levier", "green");
         collectItem("levier");
         puzzlePanel.isVisible = false;
         safe.dispose(); // Supprime le coffre
@@ -1831,34 +1885,18 @@ scene.onPointerDown = function (evt, pickResult) {
     }
     if (pickResult.pickedMesh.name === "wall7" && levierEntierPret === true && verifierOrientations() ) {
         levierDebAnimationGroup.play(false); // false
+        
+        //Ecran de chargement
+        async function goToSceneAfterDelay() {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Attente 
+            goToScene2(); // Changement de scène après 1 seconde
+            //Insérer code écran de chargement
+        }
+        goToSceneAfterDelay();
+
     }
 };
 
-
-    const ui = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
-    const btn = Button.CreateSimpleButton("toScene2", "Aller à la scène 2");
-    btn.width = "200px";
-    btn.height = "60px";
-    btn.color = "white";
-    btn.background = "purple";
-    btn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-    btn.top = "-40px";
-    btn.onPointerUpObservable.add(() => {
-        goToScene2();
-    });
-    ui.addControl(btn);
-
-    // === Intro (si tu veux la garder dans la scène 1) ===
-    showIntroText(ui, introText, currentTextIndex, camera, canvas);
-
-    // Boucle de rendu
-    engine.runRenderLoop(() => scene.render());
-
-    // Nettoyage si besoin
-    return () => {
-        ui.dispose();
-        scene.dispose();
-    };
 
 
 // Intégration dans le clic sur le coffre

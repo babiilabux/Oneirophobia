@@ -59,16 +59,21 @@ export function showIntroText(introTexture, introText, currentTextIndex, camera,
     introPanel.addControl(textBlock);
 
     // Ajouter le bouton "Skip" pour sauter l'introduction
-    const skipButton = Button.CreateSimpleButton("skipBtn", "SKIP");
-    skipButton.width = "100px";
-    skipButton.height = "40px";
-    skipButton.color = "white";
-    skipButton.background = "red";
-    skipButton.top = "10px";
+    // Ajouter le bouton "Skip" pour sauter l'introduction
+const skipButton = Button.CreateSimpleButton("skipBtn", "SKIP");
+skipButton.width = "80px";
+skipButton.height = "30px";
+skipButton.color = "white";
+skipButton.background = "#888"; // gris
+skipButton.alpha = 0.8; // légèrement transparent
+skipButton.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+skipButton.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+skipButton.top = "-10px";
+skipButton.left = "-10px"; // décalage depuis le coin bas droit
     skipButton.onPointerUpObservable.add(() => {
-        skipIntro(introTexture, camera, canvas); // Quand on clique sur "SKIP", on saute l'intro
-    });
-    introPanel.addControl(skipButton);
+    skipIntro(introTexture, camera, canvas); // Quand on clique sur "SKIP", on saute l'intro
+});
+introPanel.addControl(skipButton);
 }
 
 // Démarrer le jeu et masquer l'interface d'introduction
