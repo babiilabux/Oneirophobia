@@ -1,15 +1,5 @@
 import { 
-  Engine, 
   Scene, 
-  FreeCamera, 
-  HemisphericLight, 
-  Vector3, 
-  MeshBuilder, 
-  StandardMaterial, 
-  Color3,
-  Texture,
-  PBRMaterial,
-  SceneLoader
 } from "@babylonjs/core";
 import { createEngine } from "./core/engine.js";
 import { setupScene1 } from "./scenes/scene1.js";

@@ -2,9 +2,9 @@ import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "
 
 /**
  * Affiche l'écran d'accueil et appelle onStart() quand le joueur clique sur "Démarrer".
- * @param {BABYLON.Scene} scene - La scène Babylon.js
- * @param {Function} onStart - Callback appelé quand on clique sur "Démarrer"
- * @returns {AdvancedDynamicTexture} - La texture GUI créée (pour pouvoir la supprimer ensuite)
+ * @param {BABYLON.Scene} scene
+ * @param {Function} onStart 
+ * @returns {AdvancedDynamicTexture} 
  */
 export function showAccueil(scene, onStart) {
     const accueilUI = AdvancedDynamicTexture.CreateFullscreenUI("AccueilUI", true, scene);

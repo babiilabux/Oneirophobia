@@ -959,22 +959,6 @@ async function loadCommonTableAndChair() {
 loadCommonTableAndChair();
 
 
-// BABYLON.SceneLoader.ImportMesh("", "/models/", "meuble_tv.glb", scene, function (meshes) {
-//     let meuble = meshes[0]; // Récupérer l'objet principal du modèle
-
-//     // Ajuster la position pour placer le bureau dans un coin
-//     meuble.position = new BABYLON.Vector3(4.5, 0.5, -2.75); // Ajuste en fonction de ta pièce
-
-//     // Mise à l'échelle pour s'assurer que le bureau a la bonne taille
-//     meuble.scaling = new BABYLON.Vector3(1.75, 1.75, 1.75); // Ajuste selon la taille du modèle
-
-//     // Activer les collisions pour le modèle
-//     meuble.checkCollisions = true;
-
-//     // Si nécessaire, activer un environnement sombre
-//     meuble.log("Bureau importé, positionné et visible seulement dans l'obscurité !");
-// });
-
 let key=null;
 
 BABYLON.SceneLoader.ImportMesh("", "/models/", "key.glb", scene, function (meshes) {
@@ -1247,42 +1231,6 @@ async function loadLevierFin() {
         console.error("Erreur lors du chargement du levier : ", error);
     }
 }
-// Chargement du modèle GLB pour les bras du FPS
-// async function loadFpsArms() {
-//     try {
-//         const result = await SceneLoader.ImportMeshAsync("", "/models/", "fps_arms.glb", scene);
-//         if (result.meshes && result.meshes.length > 0) {
-//             const arms = result.meshes[0]; // Supposons que les bras sont dans meshes[0]
-//             arms.scaling = new Vector3(0.01, 0.01, 0.01); // Ajuste la taille si nécessaire
-
-//             // Synchroniser la position et la rotation des bras avec la caméra
-//             scene.onBeforeRenderObservable.add(() => {
-//                 const cameraForward = camera.getDirection(Vector3.Forward()).normalize();
-                
-//                 // Position des bras par rapport à la caméra
-//                 arms.position = camera.position
-//                     .add(cameraForward.scale(0.05)) // Distance devant la caméra
-//                     .add(new Vector3(0, -0.1, 0)); // Ajustement vertical
-
-//                 arms.rotation = camera.rotation; // Synchronisation avec la caméra
-//             });
-
-//             console.log("Bras FPS importés et positionnés !");
-//         } else {
-//             console.error("Erreur : Aucun modèle GLB chargé.");
-//         }
-//     } catch (error) {
-//         console.error("Erreur lors du chargement du modèle GLB des bras FPS : ", error);
-//     }
-// }
-
-// // Appel de la fonction pour charger les bras
-// loadFpsArms();
-
-
-
-
-
 
 
 // Déplacements (avec gestion des touches multiples)
@@ -1302,19 +1250,6 @@ scene.actionManager.registerAction(new ExecuteCodeAction(
         keyboardMap[evt.sourceEvent.key.toLowerCase()] = false;
     }
 ));
-
-// // Détection du clic sur la clé
-// key.actionManager = new ActionManager(scene);
-
-// // Quand l'utilisateur clique sur la clé, ajoute-la à l'inventaire
-// key.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnPickTrigger, () => {
-//     if (!hasKey) {
-//         hasKey = true;
-//         inventoryText.text += "\n- Clé";  // Ajoute la clé à l'inventaire
-//         key.setEnabled(false);  // Désactive l'objet clé après l'avoir ramassé
-//     }
-// }));
-
 
 
 let levierPret =  false;
@@ -1548,8 +1483,7 @@ const armoireHitbox = createHitbox(
 
 
 
-//
-// Importation de l'UI Babylon.js
+
 // Panneau de notification
 var notificationPanel = new BABYLON.GUI.Rectangle();
 notificationPanel.width = "40%";
@@ -1636,7 +1570,6 @@ var secretCode = [3, 2, 1, 6];  // Exemple de code secret
 
 
 // Création des cases de chiffres avec des couleurs différentes
-
 
 for (let i = 0; i < 4; i++) {
     let stackPanel = new BABYLON.GUI.StackPanel();
@@ -1781,9 +1714,6 @@ scene.onPointerDown = function (evt, pickResult) {
                         // Reset l'animation
                         levierDebAnimationGroup.stop();
                         levierDebAnimationGroup.reset();
-
-                        // Maintenant on peut la jouer
-                        // levierDebAnimationGroup.play(false); // false = joue une seule fois
                     }
                 } else {
                     console.error("Erreur : Aucun levier chargé.");
@@ -1838,8 +1768,7 @@ if (loadingInProgress) return; // si déjà en train de charger, ne rien faire
 
             setTimeout(() => {
                 loadingDiv.remove();
-                loadingInProgress = false;  // fin du chargement, on peut réactiver
-                // NOTE : Ne remet pas loadingScreenDisplayed à false si tu veux que ça soit unique
+                loadingInProgress = false;  
             }, 3000);
         }, 3000);
 
