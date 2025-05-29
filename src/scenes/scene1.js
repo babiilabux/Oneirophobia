@@ -13,9 +13,10 @@ import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { createCamera } from "../core/camera";
 import { createLighting } from "../core/lighting.js";
 import { playAmbientSound } from "../core/sounds.js";
-import { showIntroText, nextIntroText, skipIntro } from "../ui/intro.js";
+import { showIntroText, nextIntroText, skipIntro, startGame } from "../ui/intro.js";
 import { canPlay, canAdvanceText, introText, currentTextIndex } from "../ui/intro.js";
 import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Rectangle, Control, Grid } from "@babylonjs/gui/2D";
+import { showAccueil } from "../ui/accueil.js";
 
 
 export function setupScene1(engine, canvas, goToScene2) {
@@ -24,7 +25,6 @@ const scene = new Scene(engine);
 scene.collisionsEnabled = true;
 // Lumière
 const light = createLighting(scene, 0);
-
 
 // Création de la caméras
 const camera = createCamera(scene, canvas);
@@ -1774,63 +1774,10 @@ if (loadingInProgress) return; // si déjà en train de charger, ne rien faire
 
 }
 };
-
-// Fonction pour afficher l'écran d'accueil
-function showAccueil(scene, onStart) {
-    const accueilUI = AdvancedDynamicTexture.CreateFullscreenUI("AccueilUI", true, scene);
-
-    // Fond noir semi-transparent
-    accueilUI.rootContainer.background = "#000000";
-
-    // Panneau centré
-    const panel = new StackPanel();
-    panel.width = "500px";
-    panel.height = "350px";
-    panel.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
-    panel.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
-    accueilUI.addControl(panel);
-
-    // Titre du jeu
-    const title = new TextBlock();
-    title.text = "ONEIROPHOBIA";
-    title.fontSize = 60;
-    title.color = "white";
-    title.height = "120px";
-    title.paddingBottom = "40px";
-    title.fontStyle = "bold";
-    panel.addControl(title);
-
-    // Bouton "Démarrer"
-    const startButton = Button.CreateSimpleButton("startButton", "Démarrer");
-    startButton.width = "220px";
-    startButton.height = "70px";
-    startButton.color = "#7a2e1b";
-    startButton.background = "#b39ddb";
-    startButton.fontSize = 28;
-    startButton.cornerRadius = 20;
-    startButton.thickness = 6;
-    startButton.borderColor = "#7a2e1b";
-    startButton.paddingTop = "20px";
-    startButton.onPointerUpObservable.add(() => {
-        accueilUI.dispose(); // Supprime l'écran d'accueil
-        if (onStart) onStart();
-    });
-    panel.addControl(startButton);
-
-    // Sous-titre
-    const subtitle = new TextBlock();
-    subtitle.text = "Cliquez sur Démarrer pour jouer";
-    subtitle.fontSize = 22;
-    subtitle.color = "#cccccc";
-    subtitle.height = "60px";
-    subtitle.paddingTop = "30px";
-    panel.addControl(subtitle);
-
-    return accueilUI;
-}
-
 showAccueil(scene, () => {
-    startGame();
+    startGame(camera, canvas);
+    // Lancer la musique d'ambiance
+    playAmbientSound(scene, "/sounds/ambient_sound.mp3", 2);
 });
 
 // Intégration dans le clic sur le coffre

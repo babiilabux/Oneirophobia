@@ -1,11 +1,11 @@
 // soundManager.js
-import { Sound, Engine } from "@babylonjs/core";
+import { Sound, Engine, AudioEngine } from "@babylonjs/core";
 
-export async function playAmbientSound(scene, soundPath, volume = 0.5) {
+export async function playAmbientSound(scene, soundPath, volume) {
     // Vérifier si l'audio engine est disponible
     if (!Engine.audioEngine) {
         console.warn("Audio engine non disponible. Initialisation...");
-        Engine.audioEngine = new BABYLON.AudioEngine(); // Initialiser l'audio engine
+        Engine.audioEngine = new AudioEngine(); // Initialiser l'audio engine
     }
 
     // Vérifier si l'audio engine est bien initialisé
@@ -22,8 +22,10 @@ export async function playAmbientSound(scene, soundPath, volume = 0.5) {
     const ambientSound = new Sound("ambientSound", soundPath, scene, null, {
         loop: true, // Jouer en boucle
         autoplay: true, // Commencer automatiquement
-        volume: volume // Régler le volume
+        volume: volume, // Régler le volume
     });
+    
+        console.warn("Son d'ambiance joué :", soundPath)
 
     return ambientSound;
 }

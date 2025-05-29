@@ -1,4 +1,6 @@
-import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "@babylonjs/gui/2D";
+import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control, Image } from "@babylonjs/gui/2D";
+
+
 
 /**
  * Affiche l'écran d'accueil et appelle onStart() quand le joueur clique sur "Démarrer".
@@ -9,8 +11,10 @@ import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Control } from "
 export function showAccueil(scene, onStart) {
     const accueilUI = AdvancedDynamicTexture.CreateFullscreenUI("AccueilUI", true, scene);
 
-    // Fond noir
-    accueilUI.rootContainer.background = "#000000cc";
+    // Image de fond
+    const backgroundImage = new Image("backgroundImage", "/Textures/accueil.png");
+    backgroundImage.stretch = Image.STRETCH_UNIFORM; // Ajuste l'image pour qu'elle s'adapte à l'écran
+    accueilUI.addControl(backgroundImage);
 
     // Panneau centré
     const panel = new StackPanel();
