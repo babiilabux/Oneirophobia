@@ -11,10 +11,10 @@ export function createCamera(scene, canvas) {
   camera.minZ = 0.1;
 
   // Configuration des contrôles clavier pour ZQSD
-  camera.inputs.attached.keyboard.keysUp.push(90);    // Z (AZERTY)
-  camera.inputs.attached.keyboard.keysUp.push(87);    // W (QWERTY)
-  camera.inputs.attached.keyboard.keysLeft.push(81);  // Q (AZERTY)
-  camera.inputs.attached.keyboard.keysLeft.push(65);  // A (QWERTY)
+  camera.inputs.attached.keyboard.keysUp.push(90);    // Z 
+  camera.inputs.attached.keyboard.keysUp.push(87);    // W 
+  camera.inputs.attached.keyboard.keysLeft.push(81);  // Q 
+  camera.inputs.attached.keyboard.keysLeft.push(65);  // A 
   camera.inputs.attached.keyboard.keysDown.push(83);  // S
   camera.inputs.attached.keyboard.keysRight.push(68);  // D
 

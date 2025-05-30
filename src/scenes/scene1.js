@@ -12,8 +12,8 @@ import "@babylonjs/loaders/glTF";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { createCamera } from "../core/camera";
 import { createLighting } from "../core/lighting.js";
-import { playAmbientSound } from "../core/sounds.js";
-import { showIntroText, nextIntroText, skipIntro, startGame } from "../ui/intro.js";
+import { playAmbientSound } from "../core/sounds.js"; // import de la fonction pour le son ambiant
+import { showIntroText, nextIntroText, skipIntro} from "../ui/intro.js";
 import { canPlay, canAdvanceText, introText, currentTextIndex } from "../ui/intro.js";
 import { AdvancedDynamicTexture, StackPanel, TextBlock, Button, Rectangle, Control, Grid } from "@babylonjs/gui/2D";
 import { showAccueil } from "../ui/accueil.js";
@@ -25,6 +25,7 @@ const scene = new Scene(engine);
 scene.collisionsEnabled = true;
 // Lumière
 const light = createLighting(scene, 0);
+
 
 // Création de la caméras
 const camera = createCamera(scene, canvas);
@@ -43,6 +44,12 @@ flashlightMaterial.emissiveColor = new BABYLON.Color3(0.85, 0.73, 0.83);  // Lam
 const introTexture = AdvancedDynamicTexture.CreateFullscreenUI("IntroUI", true, scene);
 const uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene); // Pour l'inventaire
 const advancedTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI", true, scene);
+
+// Charger la police Google Font (Cinzel)
+const fontLink = document.createElement("link");
+fontLink.href = "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap";
+fontLink.rel = "stylesheet";
+document.head.appendChild(fontLink);
 
 const inventoryPanel = new Rectangle();
 inventoryPanel.width = "300px";
@@ -353,7 +360,7 @@ wall2.checkCollisions = true;
 
 // === Parchemin ===
 const parcheminMaterial = new PBRMaterial("parcheminMat", scene);
-parcheminMaterial.albedoTexture = new Texture("../Textures/AideParchemin.jpg", scene);
+parcheminMaterial.albedoTexture = new Texture("../Textures/ParcheminTableaux.png", scene);
 parcheminMaterial.albedoTexture.level = 1.0;
 parcheminMaterial.metallic = 0.0;
 parcheminMaterial.roughness = 0.9;
@@ -831,8 +838,8 @@ async function loadLampe() {
         if (result.meshes && result.meshes.length > 0) {
             lampe = result.meshes[0];
 
-            lampe.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
             lampe.parent = camera;
+            lampe.scaling = new BABYLON.Vector3(0.001, 0.001, 0.001);
             lampe.position = new BABYLON.Vector3(-0.15, -0.15, 0.4);
             lampe.rotation = new BABYLON.Vector3(0, 0, 0);
             lampe.checkCollisions = true;
@@ -1482,8 +1489,6 @@ const armoireHitbox = createHitbox(
 
 
 
-
-
 // Panneau de notification
 var notificationPanel = new BABYLON.GUI.Rectangle();
 notificationPanel.width = "40%";
@@ -1733,51 +1738,115 @@ scene.onPointerDown = function (evt, pickResult) {
     }
     if (pickResult.pickedMesh.name === "wall7" && levierEntierPret === true && verifierOrientations() ) {
          levierDebAnimationGroup.play(false); // Jouer levier
-if (loadingInProgress) return; // si déjà en train de charger, ne rien faire
-        loadingInProgress = true;
 
-        levierDebAnimationGroup.play(false);
-        goToScene2();
+    if (loadingInProgress) return;
+    loadingInProgress = true;
+
+    setTimeout(() => {
+        if (loadingScreenDisplayed) return;
+        loadingScreenDisplayed = true;
+
+        // Créer l'overlay noir
+        const blackOverlay = document.createElement("div");
+        blackOverlay.id = "blackCinematic";
+        blackOverlay.style.position = "fixed";
+        blackOverlay.style.top = "0";
+        blackOverlay.style.left = "0";
+        blackOverlay.style.width = "100%";
+        blackOverlay.style.height = "100%";
+        blackOverlay.style.backgroundColor = "black";
+        blackOverlay.style.zIndex = "9999";
+        blackOverlay.style.overflow = "hidden";
+        blackOverlay.style.display = "flex";
+        blackOverlay.style.justifyContent = "center";
+        blackOverlay.style.alignItems = "center";
+
+        // Créer le conteneur du texte animé
+        const scrollContainer = document.createElement("div");
+        scrollContainer.style.position = "relative";
+        scrollContainer.style.width = "80%";
+        scrollContainer.style.maxWidth = "800px";
+        scrollContainer.style.height = "100%";
+        scrollContainer.style.display = "flex";
+        scrollContainer.style.justifyContent = "center";
+        scrollContainer.style.alignItems = "center";
+        scrollContainer.style.overflow = "hidden";
+
+        const scrollText = document.createElement("div");
+        scrollText.style.position = "absolute";
+        scrollText.style.bottom = "-100%";
+        scrollText.style.color = "white";
+        scrollText.style.fontSize = "1.5em";
+        scrollText.style.lineHeight = "2em";
+        scrollText.style.textAlign = "center";
+        scrollText.style.animation = "scrollUp 30s linear forwards";
+        scrollText.style.fontFamily = "'Cinzel', serif";
+
+        scrollText.innerHTML = `
+            <p>Le levier s'abaisse lentement dans un grondement sourd...</p>
+            <p>Les lumières vacillent, puis s’éteignent une à une.</p>
+            <p>Inconnu : Bien, tu as réussi la première épreuve</p>
+            <p>Inconnu : La frontière entre la réalité et le mondes des rêves s'écroule</p>
+            <p>Inconnu : Mais tu n'es pas encore sauvé </p>
+            <p>Inconnu : Il te reste encore un long et sinueux chemin à parcourir</p>
+            <p>Es-tu prêt pour le deuxième niveau ?</p>
+            <p>...</p>
+            <p>Merci d’avoir joué.</p>
+            <p>Créateurs :</p>
+            <p>Nathan GUIRAL</p>
+            <p>Paul LE CAIGNEC</p>
+            <p>L3 MIAGE</p>
+            <p>Dans le cadre de Games on Web</p>
+        `;
+
+        // Ajouter l'animation CSS
+        const style = document.createElement("style");
+        style.innerHTML = `
+            @keyframes scrollUp {
+                0% { bottom: -100%; }
+                100% { bottom: 100%; }
+            }
+        `;
+
+        document.head.appendChild(style);
+        scrollContainer.appendChild(scrollText);
+        blackOverlay.appendChild(scrollContainer);
+        document.body.appendChild(blackOverlay);
+
+        // Optionnel : bouton de fermeture après l'animation
         setTimeout(() => {
-            if (loadingScreenDisplayed) return;
-            goToScene2();
-            loadingScreenDisplayed = true;
+            const button = document.createElement("button");
+            button.textContent = "Continuer";
+            button.style.position = "absolute";
+            button.style.bottom = "40px";
+            button.style.left = "50%";
+            button.style.transform = "translateX(-50%)";
+            button.style.padding = "10px 20px";
+            button.style.fontSize = "1em";
+            button.style.border = "none";
+            button.style.borderRadius = "8px";
+            button.style.backgroundColor = "#ffffff";
+            button.style.color = "#000000";
+            button.style.cursor = "pointer";
+            button.style.zIndex = "10000";
 
-            const loadingDiv = document.createElement("div");
-            loadingDiv.id = "loadingScreen";
-            loadingDiv.style.position = "absolute";
-            loadingDiv.style.top = "0";
-            loadingDiv.style.left = "0";
-            loadingDiv.style.width = "100%";
-            loadingDiv.style.height = "100%";
-            loadingDiv.style.backgroundColor = "#000";
-            loadingDiv.style.display = "flex";
-            loadingDiv.style.alignItems = "center";
-            loadingDiv.style.justifyContent = "center";
-            loadingDiv.style.zIndex = "9999";
+            button.onclick = () => {
+                blackOverlay.remove();
+                loadingInProgress = false;
+                // goToScene2(); // <-- tu peux le décommenter si tu veux
+            };
 
-            const loadingImage = document.createElement("img");
-            loadingImage.src = "../../Textures/chargement1.jpg";
-            loadingImage.style.maxWidth = "100%";
-            loadingImage.style.maxHeight = "100%";
+            blackOverlay.appendChild(button);
+        }, 31000); // après le scroll (30s)
 
-            loadingDiv.appendChild(loadingImage);
-            document.body.appendChild(loadingDiv);
-
-            
-
-            setTimeout(() => {
-                loadingDiv.remove();
-                loadingInProgress = false;  
-            }, 3000);
-        }, 3000);
-
+    }, 3000); // après le levier
 }
-};
+}
+
+
+
 showAccueil(scene, () => {
     startGame(camera, canvas);
-    // Lancer la musique d'ambiance
-    playAmbientSound(scene, "/sounds/ambient_sound.mp3", 2);
 });
 
 // Intégration dans le clic sur le coffre

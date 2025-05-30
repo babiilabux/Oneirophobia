@@ -11,17 +11,16 @@ const introText = [
     "Qui parle ?",
     "Répondez !",
     "Inconnu : Je ne peux rien te dire",
-    "Inconnu : Mais pour l'instant tu es coincé ici",
+    "Inconnu : Pour l'instant tu es coincé ici",
     "Je comprends rien",
-    "Inconnu : Pour l'instant, je peux juste te donner ce 'baton'",
-    "Inconnu : L'activer te permettra de voir temporairement la réalité",
-    "Inconnu : Mais n'oublie pas, ce n'est que temporaire.",
+    "Inconnu : La réalité est un concept flou ici",
+    "Appuie sur espace pour voir le mondes des rêves",
     "*Déplace la caméra avec la souris*",
     "*Bouge avec les flèches*",
     "*Active ton inventaire avec E*",
     "*Récupère un objet en cliquant dessus*",
     "*Equipe le avec la touche associée [1-9]*",
-    "*Interragit avec espace*",
+    "*Appuie sur echap pour quitter une interface*"
 ];
 
 
